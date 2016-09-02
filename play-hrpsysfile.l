@@ -102,7 +102,7 @@
 
 ;; 関節角速度ファイル作成
 ;; 自分のPCから実行
-(defun copy-files (&key (fname "SampleMotion") (ofname nil) (real nil))
+(defun copy-files (&key (fname "SampleMotion") (ofname nil) (real nil) (plugin t) (sample-name "ShuffleSample"))
   (let ( motionname
          zmpline velfile optfile posfile zmpfile path
          ;; (extention-list '("pos" "hip" "waist" "zmp" "vel" "optionaldata" "wrenches"))
@@ -113,72 +113,42 @@
 
     (setq zmp-x-list nil zmp-y-list nil zmp-z-list nil);; zmpリスト
 
-    (setq motionname (car (reg-split "_" fname))
-          path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")
-          velfile (concatenate string path fname ".vel")
+    (setq motionname fname)
+    (if plugin
+      (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
+      (setq path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")))
+    (setq hipfile (concatenate string path fname ".hip")
           posfile (concatenate string path fname ".pos")
+          waistfile (concatenate string path fname ".waist")
           zmpfile (concatenate string path fname ".zmp")
           optfile (concatenate string path fname ".optionaldata")
           numjoints (length (send *robot* :angle-vector))
           )
 
-    ;; wrenchファイルの作成 5行目:flz 6行目:frz
-    (let ( (sfcfile (concatenate string fname ".SFC_dat"))
-           (wrenchfile (concatenate string fname ".wrenches")) )
-      (unix:system (concatenate string "sed -e '1,1d' " path sfcfile "| awk '{print $1, 0,0,$5,0,0,0, 0,0,$6,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,0}' | cat > " path wrenchfile))
-      )
-
-    ;; velfile作成
-    (warn "~%now creating vel file and optfile~%")
-    (with-open-file
-     (vf velfile :direction :output)
-     (with-open-file
-      (pf posfile :direction :input)
-      (with-open-file
-       (zf zmpfile :direction :input)
-       (let ( (eof (gensym))  posline (zmpeof (gensym)) curzmp prezmp (diffzmp 0) (idx 0) (dt 5) )
-         (while (not (eq eof (setq posline (read-line pf nil eof))))
-           (setq zmpline (read-line zf nil zmpeof))
-
-           (setq curzmp (coerce (mapcar #'read-from-string (cdr (reg-split " +" zmpline))) float-vector))
-           (push-back (elt curzmp 0) zmp-x-list) (push-back (elt curzmp 1) zmp-y-list) (push-back (elt curzmp 2) zmp-z-list);; リストへpush
-           (if prezmp (setq diffzmp (* 1000 (/ (norm (v- curzmp prezmp)) dt))))
-           (cond
-            ;; ギャップが大きい時
-            ( (> diffzmp 50) (warning-message 1 " ~a" idx) );; [mm/msec]
-            ;; 通常時
-            ( t  (setq prezmp curzmp) )
-            )
-
-           ;; ;; optional data 書き込み
-           ;; (format of "~a" (read-from-string (car (reg-split " +" posline))));; 時刻書き込み
-           ;; (format of " ~a ~a ~a ~a ~a ~a ~a ~a ~%" 1 0 0 0   5 5 5 5) ;; 常に右足のみ接触で残りの足は非接触
-
-           ;; 速度ファイル書き込み
-           (format vf "~a" (read-from-string (car (reg-split " +" posline))));; 時刻書き込み
-           (dotimes (i numjoints) (format vf " ~a" 0.0) )
-           (format vf "~%")
-
-           (incf idx)
-           )))))
-
-    (warn "~%last index ~a~%" (1- (length zmp-y-list)))
-    (send *gnuplot* :draw (subseq zmp-y-list 0 (- (length zmp-y-list) 3) ))
-
-    ;; 最終2行削除
+    ;; 最終2行削除 fname -> _fname
     (mapc #'(lambda (extemtion)
-              (unix:system (concatenate string "sed  -e '$d' " path fname "." extemtion "| sed -e '$d' | cat >  " path fname "_." extemtion)) )
-              extention-list )
+              (unix:system (concatenate string "sed  -e '$d' " path fname "." extemtion "| sed -e '$d' | cat >  " path "_" fname "." extemtion)) )
+              extention-list)
+
+    ;; pos最後4列削除(JAXON) _fname->_fname
+    (unless (is-choreonoid) (unix:system (concatenate string "cat " path "_" fname ".pos | cut -d' ' -f1-34 | cat > " posfile "_; mv " posfile "_ " path "_" fname ".pos")))
+
+    ;; waist/hip合成 _fname->_fname
+    (warn "~%now converting waist from waist and hip~%")
+    (unix:system (concatenate string "cat " path "_" fname ".waist | cut -d' ' -f1-4 | cat > " waistfile "_"))
+    (unix:system (concatenate string "cat " path "_" fname ".hip   | cut -d' ' -f2-4 | cat > " hipfile   "_"))
+    (unix:system (concatenate string "paste " waistfile "_ " hipfile "_ | cat > " path "_" fname ".waist"))
+    (unix:system (concatenate string "rm -f " waistfile "_ " hipfile "_"))
 
     ;; posファイル 関節角度個数合わせ (HRP2 16・17号機)
-    (modify-posfile path (concatenate string fname "_"))
+    (modify-posfile path (concatenate string "_" fname))
 
     ;; ファイルコピー
     (warn "~%now copying files~%")
-    (exec-copy path (concatenate string fname "_"))
+    (exec-copy path (concatenate string "_" fname))
 
-    (unix::system (concatenate string "rm -f " path fname "_.*"));; 一次生成ファイル削除
-    (unix::system (concatenate string "rm -f " path fname "__.*"))
+    (unix::system (concatenate string "rm -f " path "_" fname ".*"));; 一次生成ファイル削除
+    ;; (unix::system (concatenate string "rm -f " path fname "__.*"))
 
     ))
 
