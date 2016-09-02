@@ -340,10 +340,13 @@
     ;; posfile作成  
     (with-open-file
      (pf posfile :direction :output)
-     (format pf "0 ")
-     (mapc #'(lambda (angle) (format pf "~s " (deg2rad angle))) (coerce (send *robot* :angle-vector) cons))
-     (format pf "~%")
-     )
+     (let (av)
+       (setq av (send *robot* :angle-vector))
+       (if (and (equal (send *robot* :name) ("JAXON_RED")) (is-choreonoid)) (setq av (concatenate float-vector av #f(0 0 0 0))))
+       (format pf "0 ")
+       (mapc #'(lambda (angle) (format pf "~s " (deg2rad angle))) (coerce av cons))
+       (format pf "~%")
+       ))
 
     ;; wrenchfile作成
     (with-open-file
