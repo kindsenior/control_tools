@@ -69,6 +69,9 @@
     nil)
   )
 
+(defun is-choreonoid ()
+  (if (ros::get-param "/multisense/range_bridge/frame_id" nil) t nil))
+
 ;; 16・17号機のposファイルを修正する
 (defun modify-posfile (path fname)
     (when (or (equal (send *robot* :name) "HRP2JSKNT") (equal (send *robot* :name) "HRP2JSKNTS"))
