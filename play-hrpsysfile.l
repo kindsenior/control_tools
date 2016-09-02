@@ -131,7 +131,8 @@
               extention-list)
 
     ;; pos最後4列削除(JAXON) _fname->_fname
-    (unless (is-choreonoid) (unix:system (concatenate string "cat " path "_" fname ".pos | cut -d' ' -f1-34 | cat > " posfile "_; mv " posfile "_ " path "_" fname ".pos")))
+    (when (and (equal (send *robot* :name) "JAXON_RED") (not (is-choreonoid)))
+      (unix:system (concatenate string "cat " path "_" fname ".pos | cut -d' ' -f1-34 | cat > " posfile "_; mv " posfile "_ " path "_" fname ".pos")))
 
     ;; waist/hip合成 _fname->_fname
     (warn "~%now converting waist from waist and hip~%")
