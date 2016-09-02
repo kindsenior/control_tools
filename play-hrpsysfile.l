@@ -172,7 +172,8 @@
   (unless (= (cdr (assoc 'ros::_emergency_check_mode (send (send *ri* :get-st-param) :slots))) 0)
     (send *ri* :set-st-param :emergency-check-mode 0))
   (send *ri* :set-log-maxlength (* 250 45))
-  (send *ri* :start-st)
+  (if (or (not (check-sim)) (is-choreonoid)) (send *ri* :start-st))
+  (send *ri* :stop-auto-balancer)
   )
 
 (defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t))
