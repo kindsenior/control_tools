@@ -189,11 +189,20 @@
   (warning-message 3 "Push Enter to start~%")
   (prepare-experiment)
   (do-until-key)
-  (if save-log (send *ri* :start-log))
-  (setq *__fname__* (reg-replace* "_$" "" fname))
+  (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
   (when real
     (setq path "/tmp/")
     (send *ri* :load-pattern (concatenate string path fname) tm) )
+  (setq sleep-time (/ tm 2))
+  (warn "sleep ~a[sec]~%" sleep-time)
+  (unix:sleep sleep-time)
+  (when save-log
+    (send *ri* :start-log)
+    (setq sleep-time (round (+ tm (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l")))))))
+    (warn "sleep ~a[sec]~%" sleep-time)
+    (unix:sleep sleep-time)
+    (unix:sleep sleep-time)
+    (save-log))
   ))
 
 (defun play-hrpsysfile (&rest args &key fname (real nil) (save-log t) (tm 10) &allow-other-keys)
