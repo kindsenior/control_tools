@@ -31,6 +31,12 @@
 ;; (require "euslib/irteus_proposals/motion-lib-proposal.l")
 (warning-message 3 "loading test-st-state-estimate-data.l...~%")
 (require (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
+(unless (assoc :nozawa-log-plotter *usage-funcs*)
+  (push (cons :nozawa-log-plotter
+              #'(lambda ()
+                  (warn "~%hrpsys-test/test-st-state-estimate-data.l~%")
+                  (log-plot-usage)
+                  (warn "~%"))) *usage-funcs*))
 
 (load "euslib-tools.l")
 
