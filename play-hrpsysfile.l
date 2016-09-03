@@ -319,6 +319,23 @@
 
     ))
 
+(defun init-landing-pose (&key (fname "SampleMotion") (tm 2000) (real nil) (plugin t) (sample-name "ShuffleSample"))
+  (let* ( (motionname (car (reg-split "_"  fname))) (path) )
+    (if plugin
+      (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
+      (setq path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")))
+
+    (send *robot* :angle-vector (coerce (mapcar #'rad2deg (cdr (mapcar #'read-from-string (reg-split " " (read-line (piped-fork (concatenate string "head -n 1 " path fname ".pos"))))))) float-vector))
+    (send *robot* :fix-leg-to-coords (make-coords))
+    (setq target-endcoords (mapcar #'(lambda (limb) (send *robot* limb :end-coords :copy-worldcoords)) '(:lleg :rleg)))
+
+    (send *robot* :reset-landing-pose)
+    (send *robot* :fix-leg-to-coords (make-coords))
+    (mapc #'(lambda (limb target-coord) (send *robot* limb :inverse-kinematics target-coord)) '(:lleg :rleg) target-endcoords)
+
+    (set-current-pose)
+  ))
+
 (defun set-current-pose (&key (tm 10) (zmp-offset #f(0 0 0)))
   (let* ( (zmp)
           (fname-with-path "/tmp/set-current-pose")
