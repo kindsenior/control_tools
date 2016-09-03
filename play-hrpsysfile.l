@@ -275,17 +275,19 @@
     ))
 
 ;; モーションの初期姿勢へ遷移 (hrpsysシーケンスファイルの1行目のみを実行)
-(defun init-pose (&key (fname "SampleMotion") (tm 2000) (real nil))
-  (let* ( (motionname (car (reg-split "_"  fname)))
-          (path (concatenate string (unix::getenv "HOME") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/"))
-          )
+(defun init-pose (&key (fname "SampleMotion") (tm 2000) (real nil) (plugin t) (sample-name "ShuffleSample"))
+  (let* ( (motionname (car (reg-split "_"  fname))) (path) )
+
+    (if plugin
+      (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
+      (setq path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")))
 
     (mapc #'(lambda (extemtion)
               (unix:system (concatenate string "head -n 1 " path fname "." extemtion "| cat >  " path fname "_init." extemtion)) )
           ;; (list "hip" "waist" "zmp" "vel" "pos" "optionaldata" "wrenches")
-          (list "waist" "zmp" "vel" "pos" "optionaldata" "wrenches") )
+          (list "waist" "zmp" "pos" "optionalData" "wrenches") )
 
-    ;; posファイル 関節角度個数合わせ (HRP2 16・17号機)
+    ;; posファイル 関節角度個数合わせ
     (modify-posfile path (concatenate string fname "_init"))
 
     ;; ファイルをコピー
