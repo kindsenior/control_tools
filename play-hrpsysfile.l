@@ -130,10 +130,6 @@
               (unix:system (concatenate string "sed  -e '$d' " path fname "." extemtion "| sed -e '$d' | cat >  " path "_" fname "." extemtion)) )
               extention-list)
 
-    ;; pos最後4列削除(JAXON) _fname->_fname
-    (when (and (equal (send *robot* :name) "JAXON_RED") (not (is-choreonoid)))
-      (unix:system (concatenate string "cat " path "_" fname ".pos | cut -d' ' -f1-34 | cat > " posfile "_; mv " posfile "_ " path "_" fname ".pos")))
-
     ;; waist/hip合成 _fname->_fname
     (warn "~%now converting waist from waist and hip~%")
     (unix:system (concatenate string "cat " path "_" fname ".waist | cut -d' ' -f1-4 | cat > " waistfile "_"))
@@ -141,7 +137,7 @@
     (unix:system (concatenate string "paste " waistfile "_ " hipfile "_ | cat > " path "_" fname ".waist"))
     (unix:system (concatenate string "rm -f " waistfile "_ " hipfile "_"))
 
-    ;; posファイル 関節角度個数合わせ (HRP2 16・17号機)
+    ;; posファイル 関節角度個数合わせ
     (modify-posfile path (concatenate string "_" fname))
 
     ;; ファイルコピー
