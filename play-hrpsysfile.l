@@ -106,7 +106,7 @@
   (let ( motionname
          zmpline velfile optfile posfile zmpfile path
          ;; (extention-list '("pos" "hip" "waist" "zmp" "vel" "optionaldata" "wrenches"))
-         (extention-list '("pos" "waist" "zmp" "vel" "optionaldata" "wrenches"))
+         (extention-list '("pos" "waist" "zmp" "hip" "optionalData" "wrenches"))
          )
 
     (if (not ofname) (setq ofname fname))
@@ -121,7 +121,6 @@
           posfile (concatenate string path fname ".pos")
           waistfile (concatenate string path fname ".waist")
           zmpfile (concatenate string path fname ".zmp")
-          optfile (concatenate string path fname ".optionaldata")
           numjoints (length (send *robot* :angle-vector))
           )
 
@@ -130,12 +129,12 @@
               (unix:system (concatenate string "sed  -e '$d' " path fname "." extemtion "| sed -e '$d' | cat >  " path "_" fname "." extemtion)) )
               extention-list)
 
-    ;; waist/hip合成 _fname->_fname
+    ;; waist/hip合成 _fname->fname_->_fname
     (warn "~%now converting waist from waist and hip~%")
     (unix:system (concatenate string "cat " path "_" fname ".waist | cut -d' ' -f1-4 | cat > " waistfile "_"))
     (unix:system (concatenate string "cat " path "_" fname ".hip   | cut -d' ' -f2-4 | cat > " hipfile   "_"))
     (unix:system (concatenate string "paste " waistfile "_ " hipfile "_ | cat > " path "_" fname ".waist"))
-    (unix:system (concatenate string "rm -f " waistfile "_ " hipfile "_"))
+    (unix:system (concatenate string "rm -f " waistfile "_ " hipfile "_ " path "_" fname ".hip"))
 
     ;; posファイル 関節角度個数合わせ
     (modify-posfile path (concatenate string "_" fname))
@@ -145,7 +144,6 @@
     (exec-copy path (concatenate string "_" fname))
 
     (unix::system (concatenate string "rm -f " path "_" fname ".*"));; 一次生成ファイル削除
-    ;; (unix::system (concatenate string "rm -f " path fname "__.*"))
 
     ))
 
@@ -186,8 +184,8 @@
 
 (defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t))
   (let (path)
-  (warning-message 3 "Push Enter to start~%")
   (prepare-experiment)
+  (warning-message 3 "Push Enter to start~%")
   (do-until-key)
   (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
   (when real
