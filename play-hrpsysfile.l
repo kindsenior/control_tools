@@ -191,12 +191,12 @@
   (when real
     (setq path "/tmp/")
     (send *ri* :load-pattern (concatenate string path fname) tm) )
-  (setq sleep-time (/ tm 2))
+  (setq sleep-time (round (* tm 0.8)))
   (warn "sleep ~a[sec]~%" sleep-time)
   (unix:sleep sleep-time)
   (when save-log
     (send *ri* :start-log)
-    (setq sleep-time (round (+ tm (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l")))))))
+    (setq sleep-time (round (+ (/ tm 2) (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l")))))))
     (warn "sleep ~a[sec]~%" sleep-time)
     (unix:sleep sleep-time)
     (unix:sleep sleep-time)
