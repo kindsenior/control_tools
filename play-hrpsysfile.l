@@ -278,7 +278,7 @@
     ))
 
 ;; モーションの初期姿勢へ遷移 (hrpsysシーケンスファイルの1行目のみを実行)
-(defun init-pose (&key (fname "SampleMotion") (tm 2000) (real nil) (plugin t) (sample-name "ShuffleSample"))
+(defun init-pose (&key (fname "SampleMotion") (tm 10) (real nil) (plugin t) (sample-name "ShuffleSample"))
   (let* ( (motionname (car (reg-split "_"  fname))) (path) )
 
     (if plugin
@@ -310,7 +310,7 @@
 
          (send *ci* :load-pattern (concatenate string "/tmp/" fname "_init") tm) )
        ( (boundp '*ri*)
-         (send *ri* :load-pattern (concatenate string "/tmp/" fname "_init")) )
+         (send *ri* :load-pattern (concatenate string "/tmp/" fname "_init") tm) )
        )
       )
 
