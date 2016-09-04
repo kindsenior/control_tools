@@ -186,7 +186,7 @@
   (if (or (not (check-sim)) (is-choreonoid)) (send *ri* :start-st))
   )
 
-(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t))
+(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t) (sample-name "ShuffleSample"))
   (let (path local-path)
    (if plugin
        (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
