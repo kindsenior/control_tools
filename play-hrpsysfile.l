@@ -75,9 +75,9 @@
 ;; posファイルの関節数を修正する
 (defun modify-posfile (path fname)
     (when (or (equal (send *robot* :name) "HRP2JSKNT") (equal (send *robot* :name) "HRP2JSKNTS"))
-      (unix:system (concatenate string "cat " path fname ".pos | cut -d' ' -f1-35 | cat > " path fname ".pos_; mv " path fname ".pos")));; 1-35 34関節
+      (unix:system (concatenate string "cat " path fname ".pos | cut -d' ' -f1-35 | cat > " path fname ".pos_; mv " path fname ".pos_ " path fname ".pos")));; 1-35 34関節
     (when (and (equal (send *robot* :name) "JAXON_RED") (not (is-choreonoid)))
-      (unix:system (concatenate string "cat " path fname ".pos | cut -d' ' -f1-34 | cat > " path fname ".pos_; mv " path fname ".pos")));; 1-34 33関節
+      (unix:system (concatenate string "cat " path fname ".pos | cut -d' ' -f1-34 | cat > " path fname ".pos_; mv " path fname ".pos_ " path fname ".pos")));; 1-34 33関節
     )
 
 ;; 実際に実機またはローカルの/tmpにファイルをコピー
