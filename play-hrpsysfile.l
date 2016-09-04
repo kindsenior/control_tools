@@ -186,8 +186,12 @@
   (if (or (not (check-sim)) (is-choreonoid)) (send *ri* :start-st))
   )
 
-(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t))
-  (let (path)
+(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t))
+  (let (path local-path)
+   (if plugin
+       (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
+     (setq local-path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")))
+
   (prepare-experiment)
   (warning-message 3 "Push Enter to start~%")
   (do-until-key)
@@ -200,7 +204,7 @@
   (unix:sleep sleep-time)
   (when save-log
     (send *ri* :start-log)
-    (setq sleep-time (round (+ (/ tm 2) (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l")))))))
+    (setq sleep-time (round (+ (/ tm 2) (* 0.002 (read (piped-fork (concatenate string "cat " local-path fname ".pos" " | wc -l")))))))
     (warn "sleep ~a[sec]~%" sleep-time)
     (unix:sleep sleep-time)
     (unix:sleep sleep-time)
