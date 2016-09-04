@@ -342,8 +342,8 @@
     (set-current-pose)
   ))
 
-(defun set-current-pose (&key (tm 10) (zmp-offset #f(0 0 0)))
-  (let* ( (zmp)
+(defun set-current-pose (&key (tm 10) (zmp-offset #f(0 0 0)) (lcop-offset #f(0 0)) (rcop-offset #f(0 0)))
+  (let* ( (zmp fz lwrench rwrench)
           (fname-with-path "/tmp/set-current-pose")
           ;; (waist-coord)
           (posfile      (format nil "~a.pos"          fname-with-path)) pf
@@ -388,9 +388,23 @@
        ))
 
     ;; wrenchfile作成
+    (setq fz (* 9.8 1e-3 0.5 (send *robot* :weight)));; [N]
+    (setq lf (float-vector 0 0 fz) 
+          ln (float-vector (* fz (elt lcop-offset 1) 1e-3) (* -1 fz (elt lcop-offset 0) 1e-3) 0)
+          rf (float-vector 0 0 fz)
+          rn (float-vector (* fz (elt rcop-offset 1) 1e-3) (* -1 fz (elt rcop-offset 0) 1e-3) 0))
+    (setq lf (m* (send (send *robot* :lleg :end-coords) :worldrot) (transpose (matrix lf)))
+          ln (m* (send (send *robot* :lleg :end-coords) :worldrot) (transpose (matrix ln)))
+          rf (m* (send (send *robot* :rleg :end-coords) :worldrot) (transpose (matrix rf)))
+          rn (m* (send (send *robot* :rleg :end-coords) :worldrot) (transpose (matrix rn))))
+    (setq lwrench (concatenate float-vector (matrix-row (transpose lf) 0) (matrix-row (transpose ln) 0))
+          rwrench (concatenate float-vector (matrix-row (transpose rf) 0) (matrix-row (transpose rn) 0)))
     (with-open-file
      (wf wrenchfile :direction :output)
-     (format wf "0  0 0 ~s 0 0 0  0 0 ~s 0 0 0  0 0 0 0 0 0  0 0 0 0 0 0~%" (* 9.8 1e-3 (* 0.5 (send *robot* :weight))) (* 9.8 1e-3 (* 0.5 (send *robot* :weight))))
+     (format wf "0");; time
+     (dotimes (i 6) (format wf " ~s" (elt rwrench i)))
+     (dotimes (i 6) (format wf " ~s" (elt lwrench i)))
+     (format wf "0 0 0 0 0 0  0 0 0 0 0 0~%")
      )
 
     ;; optionalfile作成
