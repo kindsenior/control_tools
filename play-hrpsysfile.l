@@ -343,7 +343,7 @@
   ))
 
 (defun set-current-pose (&key (tm 10) (zmp-offset #f(0 0 0)) (lcop-offset #f(0 0)) (rcop-offset #f(0 0)))
-  (let* ( (zmp fz lwrench rwrench)
+  (let* ( (zmp) (fz) (lwrench) (rwrench)
           (fname-with-path "/tmp/set-current-pose")
           ;; (waist-coord)
           (posfile      (format nil "~a.pos"          fname-with-path)) pf
