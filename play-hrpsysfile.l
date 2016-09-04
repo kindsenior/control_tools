@@ -102,7 +102,7 @@
 
 ;; 関節角速度ファイル作成
 ;; 自分のPCから実行
-(defun copy-files (&key (fname "SampleMotion") (ofname nil) (real nil) (plugin t) (sample-name "ShuffleSample"))
+(defun copy-files (&key (fname "SampleMotion") (ofname nil) (real nil) (plugin t) (sample-name "ShuffleSample") (remove-last-row t))
   (let ( motionname
          zmpline velfile optfile posfile zmpfile path
          ;; (extention-list '("pos" "hip" "waist" "zmp" "vel" "optionaldata" "wrenches"))
@@ -125,9 +125,13 @@
           )
 
     ;; 最終2行削除 fname -> _fname
-    (mapc #'(lambda (extemtion)
-              (unix:system (concatenate string "sed  -e '$d' " path fname "." extemtion "| sed -e '$d' | cat >  " path "_" fname "." extemtion)) )
+    (if remove-last-row
+        (mapc #'(lambda (extemtion)
+                  (unix:system (concatenate string "sed  -e '$d' " path fname "." extemtion "| sed -e '$d' | cat >  " path "_" fname "." extemtion)) )
               extention-list)
+      (mapc #'(lambda (extemtion)
+                  (unix:system (concatenate string "cp " path fname "." extemtion  " " path "_" fname "." extemtion)) )
+            extention-list))
 
     ;; waist/hip合成 _fname->fname_->_fname
     (warn "~%now converting waist from waist and hip~%")
@@ -285,16 +289,14 @@
       (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
       (setq path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")))
 
+    ;;fname->fname_init
     (mapc #'(lambda (extemtion)
               (unix:system (concatenate string "head -n 1 " path fname "." extemtion "| cat >  " path fname "_init." extemtion)) )
           ;; (list "hip" "waist" "zmp" "vel" "pos" "optionaldata" "wrenches")
-          (list "waist" "zmp" "pos" "optionalData" "wrenches") )
+          (list "waist" "hip" "zmp" "pos" "optionalData" "wrenches") )
 
-    ;; posファイル 関節角度個数合わせ
-    (modify-posfile path (concatenate string fname "_init"))
-
-    ;; ファイルをコピー
-    (exec-copy path (concatenate string fname "_init"))
+    ;; fname_init->_fname_init
+    (copy-files :fname (concatenate string fname "_init") :real real :remove-last-row nil)
 
     (when real
       (cond
@@ -308,9 +310,9 @@
          (send *ci* :set-impedance-param :mdk #f(0.01 5 3) :legs)
          (send *ci* :set-ref-force #f(0 0 200) 1000 :legs)
 
-         (send *ci* :load-pattern (concatenate string "/tmp/" fname "_init") tm) )
+         (send *ci* :load-pattern (concatenate string "/tmp/_" fname "_init") tm) )
        ( (boundp '*ri*)
-         (send *ri* :load-pattern (concatenate string "/tmp/" fname "_init") tm) )
+         (send *ri* :load-pattern (concatenate string "/tmp/_" fname "_init") tm) )
        )
       )
 
