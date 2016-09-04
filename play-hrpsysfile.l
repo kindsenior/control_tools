@@ -130,7 +130,7 @@
                   (unix:system (concatenate string "sed  -e '$d' " path fname "." extemtion "| sed -e '$d' | cat >  " path "_" fname "." extemtion)) )
               extention-list)
       (mapc #'(lambda (extemtion)
-                  (unix:system (concatenate string "cp " path fname "." extemtion  " " path "_" fname "." extemtion)) )
+                  (unix:system (concatenate string "mv " path fname "." extemtion  " " path "_" fname "." extemtion)) )
             extention-list))
 
     ;; waist/hip合成 _fname->fname_->_fname
