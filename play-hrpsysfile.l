@@ -183,7 +183,9 @@
     (send *ri* :set-st-param :emergency-check-mode 0)
     (warn "disable emergency-check~%"))
   (send *ri* :set-log-maxlength (* 500 25))
-  (if (or (not (check-sim)) (is-choreonoid)) (send *ri* :start-st))
+  (when (or (not (check-sim)) (is-choreonoid))
+    (warn "start-st~%")
+    (send *ri* :start-st))
   )
 
 (defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t) (sample-name "ShuffleSample"))
