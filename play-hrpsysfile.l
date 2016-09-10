@@ -404,7 +404,7 @@
      (format wf "0");; time
      (dotimes (i 6) (format wf " ~s" (elt rwrench i)))
      (dotimes (i 6) (format wf " ~s" (elt lwrench i)))
-     (format wf "0 0 0 0 0 0  0 0 0 0 0 0~%")
+     (format wf " 0 0 0 0 0 0  0 0 0 0 0 0~%")
      )
 
     ;; optionalfile作成
