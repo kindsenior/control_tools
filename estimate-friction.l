@@ -1,5 +1,6 @@
-;; (load "package://eus_qpoases/euslisp/eus-qpoases.l")
+(load "package://eus_qpoases/euslisp/eus-qpoases.l")
 (load "log-tools.l")
+(unless (boundp '*irtviewer*) (make-irtviewer))
 (send *irtviewer* :change-background #f(0.5 0.5 0.5))
 
 (defun update-robot-state (robot-state &key (mode :reference-root) (rleg-fix nil))
@@ -77,6 +78,7 @@
                  (tm-list nil) (act-fx-list nil) (estimated-fx-list nil) (act-fy-list nil) (estimated-fy-list nil)
                  (act-nz-list nil) (estimated-nz-list nil) (vy-list nil) (wz-list nil))
     (warn "~%estimate-foot-force-distribution()~%")
+    (warn "~s->~s[sec]~%" (car xrange) (cadr xrange))
     (send *robot* :reset-pose);; for rleg-fix
     (update-robot-state (elt *rs-list* (car xrange)) :mode mode :rleg-fix rleg-fix)
     (setq last-pos (send *robot* :lleg :end-coords :worldpos)
