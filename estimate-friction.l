@@ -70,9 +70,59 @@
           (reverse dxy-list))
   ))
 
-(defun estimate-foot-force-distribution (&key (grid '(1 1)) (step 20) (mode :reference-root) (mu 0.6) (sleep-time 0) (start-time 5) (stop-time 15) (rleg-fix t))
+(defun calc-distributed-fz (&key (force-vec) (moment-vec) (cur-pos #f(0 0 0)) (cur-rot (unit-matrix)) (v-dt #f(0 0 0)) (w-dt #f(0 0 0)) (mu 0.5) (grid '(1 1)) (flush nil)
+                                 (vertex-list '(#f(0.5 0 0) #f(-0.5 0 0) #f(0 0.01 0) #f(0 -0.01 0))) (unilateral t))
+  (let ((color-list '(#f(1 0 0) #f(0 1 0) #f(0 0 1))) (distributed-fz-vec) (point-num))
+    (unless (boundp '*cop*) (setq *cop* (make-cylinder 5 0.1)) (objects *cop*))
+
+    (multiple-value-setq (A B force-point-list dxy-list) (get-convert-matrix cur-pos cur-rot v-dt w-dt mu :draw t :size 3 :grid grid :vertex-list vertex-list));; [m]
+    (setq point-num (length (matrix-row A 0)))
+
+    (if unilateral
+        (setq distributed-fz-vec (solve-qpoases-qp ;; with inequality constraints
+                                  :eval-weight-matrix (unit-matrix point-num)
+                                  :eval-coeff-vector (make-array point-num :element-type float-vector :initial-element 0)
+                                  :inequality-matrix (unit-matrix point-num)
+                                  :inequality-min-vector (make-array point-num :element-type float-vector :initial-element 0)
+                                  :equality-matrix A
+                                  :equality-vector (float-vector (elt force-vec 2) (elt moment-vec 0) (elt moment-vec 1))))
+      (setq distributed-fz-vec (solve-qpoases-qp ;; without inequality constraints
+                                :eval-weight-matrix (unit-matrix point-num)
+                                :eval-coeff-vector (make-array point-num :element-type float-vector :initial-element 0)
+                                :equality-matrix A
+                                :equality-vector (float-vector (elt force-vec 2) (elt moment-vec 0) (elt moment-vec 1))))
+      )
+
+    (when distributed-fz-vec
+      ;; draw foot
+      (send (instance face :init :vertices (quickhull force-point-list)) :draw-on :flush nil :color #f(0 0 1))
+
+      ;; draw distributed force
+      (mapc #'(lambda (force-point fz dxy)
+                (send *viewer* :draw-arrow force-point (v+ force-point (concatenate float-vector (scale (* mu fz -1) dxy) (float-vector fz))) :color #f(1 1 1)))
+            force-point-list (coerce distributed-fz-vec cons) dxy-list)
+
+      ;; draw moment
+      (dotimes (i 3)
+        ;; (send *viewer* :draw-arrow cur-pos (v+ cur-pos (scale (elt moment-vec i) (matrix-column cur-rot i))))
+        (send *viewer* :draw-arrow cur-pos (v+ cur-pos (scale (* 10 (elt (send (make-coords :rot cur-rot) :inverse-transform-vector moment-vec) i)) (matrix-column cur-rot i))) :color (elt color-list i))
+        )
+
+      ;; draw cop
+      (send *cop* :locate (v+ cur-pos (scale 1000 (float-vector (/ (elt moment-vec 1) (elt force-vec 2)) (/ (elt moment-vec 0) (elt force-vec 2) -1) 0))) :world)
+      )
+
+    (when flush
+      (send *viewer* :flush)
+      (send *viewer* :draw-objects :flush nil))
+
+    (list A B distributed-fz-vec)
+    ))
+
+(defun estimate-foot-force-distribution (&key (grid '(1 1)) (step 20) (mode :reference-root) (mu 0.6) (sleep-time 0) (start-time 5) (stop-time 15) (rleg-fix t)
+                                              (vertex-list (list (scale 1e-3 #f(130 75 0)) (scale 1e-3 #f(-100 -55 0)))))
   (let ( (xrange (calc-xrange (list start-time stop-time) *rs-list*))
-                 last-pos last-rot cur-coord cur-pos cur-rot (dt (calc-dt *rs-list*))v-dt w-dt r-2dof-closs-vec A B force-point-list dxy-list
+                 last-pos last-rot cur-coord cur-pos cur-rot (dt (calc-dt *rs-list*))v-dt w-dt r-2dof-closs-vec A B
                  point-num force-vec moment-vec distributed-fz-vec
                  (color-list '(#f(1 0 0) #f(0 1 0) #f(0 0 1)))
                  (tm-list nil) (act-fx-list nil) (estimated-fx-list nil) (act-fy-list nil) (estimated-fy-list nil)
@@ -92,37 +142,18 @@
                cur-pos (send cur-coord :worldpos)
                cur-rot (send cur-coord :worldrot))
 
-         (setq v-dt (v- cur-pos last-pos);; [mm]
-               w-dt (matrix-log (m* cur-rot (inverse-matrix last-rot))));; [rad]
-         (multiple-value-setq (A B force-point-list dxy-list) (get-convert-matrix cur-pos cur-rot v-dt w-dt mu :draw t :size 3 :grid grid))
-
-         (setq point-num (length (matrix-row A 0)))
          ;; (setq force-vec (scale -1 (elt (car (send rs :wrench-list)) 1));; left foot
          ;;       moment-vec (elt (cadr (send rs :wrench-list)) 1));; left foot
          (setq force-vec (send rs :get :lleg-force-vector)
                moment-vec (send rs :get :lleg-moment-vector))
          (format t "~s[sec] force: ~s  moment: ~s~%" (* i dt) force-vec moment-vec)
 
-         (setq distributed-fz-vec (solve-qpoases-qp
-                                            :eval-weight-matrix (unit-matrix point-num)
-                                            :eval-coeff-vector (make-array point-num :element-type float-vector :initial-element 0)
-                                            :inequality-matrix (unit-matrix point-num)
-                                            :inequality-min-vector (make-array point-num :element-type float-vector :initial-element 0)
-                                            :equality-matrix A
-                                            :equality-vector (float-vector (elt force-vec 2) (elt moment-vec 0) (elt moment-vec 1))))
+         (setq v-dt (v- cur-pos last-pos);; [mm]
+               w-dt (matrix-log (m* cur-rot (inverse-matrix last-rot))));; [rad]
 
+         (multiple-value-setq (A B distributed-fz-vec) (calc-distributed-fz :force-vec force-vec :moment-vec moment-vec :cur-pos cur-pos :cur-rot cur-rot
+                                                                          :v-dt v-dt :w-dt w-dt :mu mu :grid grid :vertex-list vertex-list))
          (when distributed-fz-vec
-           ;; draw distributed force
-           (mapc #'(lambda (force-point fz dxy)
-                     (send *viewer* :draw-arrow force-point (v+ force-point (concatenate float-vector (scale (* mu fz -1) dxy) (float-vector fz))) :color #f(1 1 1)))
-                 force-point-list (coerce distributed-fz-vec cons) dxy-list)
-
-           ;; draw moment
-           (dotimes (i 3)
-             ;; (send *viewer* :draw-arrow cur-pos (v+ cur-pos (scale (elt moment-vec i) (matrix-column cur-rot i))))
-             (send *viewer* :draw-arrow cur-pos (v+ cur-pos (scale (* 10 (elt (send (make-coords :rot cur-rot) :inverse-transform-vector moment-vec) i)) (matrix-column cur-rot i))) :color (elt color-list i))
-             )
-
            ;; fx,fy,nz plot
            (let* ((convert-coord (make-coords :rot cur-rot))
                   (local-force  (send convert-coord :inverse-transform-vector force-vec))
