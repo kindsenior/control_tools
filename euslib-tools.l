@@ -18,3 +18,9 @@
     (while (not (eq eof (setq tmp (read-line p nil eof)))) (push tmp ret))
     (reverse ret)
   ))
+
+(defun range (num)
+  (let ((i 0) (ret-list nil))
+    (while (< i num) (push i ret-list) (incf i))
+    (reverse ret-list)
+  ))
