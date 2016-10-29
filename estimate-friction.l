@@ -81,7 +81,7 @@
           last-rot (send *robot* :lleg :end-coords :worldrot))
 
     (let ((i (car xrange)))
-      (do-until-key-with-check (< i (round (/ stop-time dt)))
+      (do-until-key-with-check (< i (cadr xrange))
        (when (= (mod i step) 0)
          (setq rs (elt *rs-list* i))
          (setq cur-coord (send *robot* :lleg :end-coords :copy-worldcoords)
