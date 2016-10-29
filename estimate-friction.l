@@ -34,13 +34,15 @@
     (reverse force-point-list)
   ))
 
-(defun get-convert-matrix (cur-pos cur-rot v-dt w-dt mu &key (draw nil) (size 1) (grid) (flush nil))
+(defun get-convert-matrix (cur-pos cur-rot v-dt w-dt mu &key (draw nil) (size 1) (grid '(1 1)) (flush nil)
+                                   (vertex-list (list (scale 1e-3 #f(130 75 0)) (scale 1e-3 #f(-100 -55 0)))));; '(left-top right-bottom) [m]
   (let ( (a-list nil) (b-list nil) (vi-dt) (force-point-list nil) (dxy-list nil)
          (cur-pos (scale 1e-3 cur-pos)) (v-dt (scale 1e-3 v-dt));; [m]
-         ;; (left-top #f(130 50 0)) (right-bottom #f(-120 -90 0));; right foot
-         (left-top (scale 1e-3 #f(130 75 0))) (right-bottom (scale 1e-3 #f(-100 -55 0)));; left foot [m]
+         (ri-local-list (if (< (length vertex-list) 3)
+                            (get-local-force-point-list (car vertex-list) (cadr vertex-list) grid)
+                            vertex-list))
          )
-    (dolist (ri-local (get-local-force-point-list left-top right-bottom grid));; [m] <- left-top, right-bottom
+    (dolist (ri-local ri-local-list);; [m] <- left-top, right-bottom
 
       (setq ri (send (make-coords :rot cur-rot) :transform-vector  ri-local);; 3dof world [m]
             vi-dt (v+ v-dt (v* w-dt ri));; 3dof world [m]
