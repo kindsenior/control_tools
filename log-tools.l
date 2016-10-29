@@ -204,11 +204,12 @@
   )
 
 (defun calc-xrange (xrange rs-list)
-  (let ( (start-idx 0) (stop-idx 0) )
+  (let ( (start-idx 0) (stop-idx 0) start-time stop-time max-idx )
     (if xrange
         (progn
-          (until (< (car xrange) (send (elt rs-list start-idx) :time)) (incf start-idx))
-          (until (< (cadr xrange) (send (elt rs-list stop-idx) :time)) (incf stop-idx))
+          (setq start-time (car xrange) stop-time (cadr xrange) max-idx (1- (length rs-list)))
+          (until (or (> start-idx max-idx) (< start-time (send (elt rs-list start-idx) :time))) (incf start-idx))
+          (until (or (> stop-idx  max-idx) (< stop-time  (send (elt rs-list stop-idx) :time))) (incf stop-idx))
           (list start-idx stop-idx) )
       (list 0 (length rs-list)))
     ))
