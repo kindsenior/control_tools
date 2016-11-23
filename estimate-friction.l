@@ -109,7 +109,7 @@
         )
 
       ;; draw cop
-      (send *cop* :locate (v+ cur-pos (scale 1000 (float-vector (/ (elt moment-vec 1) (elt force-vec 2)) (/ (elt moment-vec 0) (elt force-vec 2) -1) 0))) :world)
+      (send *cop* :locate (v+ cur-pos (scale 1000 (float-vector (/ (elt moment-vec 1) (elt force-vec 2) -1) (/ (elt moment-vec 0) (elt force-vec 2)) 0))) :world)
       )
 
     (when flush
