@@ -203,6 +203,9 @@
   fname
   )
 
+(defun set-yrange (yrange)
+  (send *gp* :command (format nil " set yrange [~a:~a]" (car yrange) (cdr yrange))))
+
 (defun calc-xrange (xrange rs-list)
   (let ( (start-idx 0) (stop-idx 0) start-time stop-time max-idx )
     (if xrange

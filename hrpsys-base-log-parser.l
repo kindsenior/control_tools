@@ -105,7 +105,7 @@
 
 
     ;; (send *gp* :command "set grid;set size 1,1")
-    (if yrange (send *gp* :command (format nil " set yrange [~a:~a]" (car yrange) (cdr yrange))))
+    (if yrange (set-yrange yrange))
     ;; (plot-robot-state-data-list (subseq *rs-list* start-idx stop-idx) :mode mode :axis axis :limb limb :robot (send *log* :robot) :proc-mode proc-mode)
     (plot-robot-state-data-list data :mode mode :axis axis :limb limb :robot (send *log* :robot) :proc-mode proc-mode)
 
