@@ -251,6 +251,32 @@
      :ylabel "Foot force [N]"
      )
     ))
+(defun calc-cop (axis force-vector moment-vector)
+  (/ (elt moment-vector (if (= axis 0) 1 0)) (elt force-vector 2) (if (= axis 0) -1 1)))
+
+(defun plot-foot-cop
+  (&key (rs-list *rs-list*)
+        (add-fname nil) (fname "Actual and Reference COP")
+        (axis 0) (cutoff-f nil) (xrange nil) (yrange) (limb '(:lleg :rleg)) (save t))
+  (let* ( (xrange (calc-xrange xrange rs-list)) (data (subseq *rs-list* (car xrange) (cadr xrange))))
+    (if yrange (set-yrange yrange))
+    (graph-view
+     (delete nil (list (if (find :rleg limb) (mapcar #'(lambda (x) (calc-cop axis (subseq (send x :get :sh-rleg-ref-force) 0 3) (subseq (send x :get :sh-rleg-ref-force) 3 6))) data))
+                       (if (find :rleg limb) (low-pass-filter (mapcar #'(lambda (x) (calc-cop axis (send x :get :rleg-force-vector) (send x :get :rleg-moment-vector))) data) :cutoff-f cutoff-f))
+                       (if (find :lleg limb) (mapcar #'(lambda (x) (calc-cop axis (subseq (send x :get :sh-lleg-ref-force) 0 3) (subseq (send x :get :sh-lleg-ref-force) 3 6))) data))
+                       (if (find :lleg limb) (low-pass-filter (mapcar #'(lambda (x) (calc-cop axis (send x :get :lleg-force-vector) (send x :get :lleg-moment-vector))) data) :cutoff-f cutoff-f))
+                       ))
+     (mapcar #'(lambda (x) (send x :time)) data)
+     :keylist (delete nil (list (if (find :rleg limb) "ref rleg COP x") (if (find :rleg limb) "act rleg COP x")
+                                (if (find :lleg limb) "ref lleg COP x") (if (find :lleg limb) "act lleg COP x")
+                                ))
+     :title fname
+     :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
+     :dump-graph save
+     :xlabel "Time[s]"
+     :ylabel "COP[m]"
+     )
+    ))
 
 (defun calc-r (alpha-zmp)
   (let ( (steepness 8) )
