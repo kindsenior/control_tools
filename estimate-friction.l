@@ -73,7 +73,6 @@
 (defun calc-distributed-fz (&key (force-vec) (moment-vec) (cur-pos #f(0 0 0)) (cur-rot (unit-matrix)) (v-dt #f(0 0 0)) (w-dt #f(0 0 0)) (mu 0.5) (grid '(1 1)) (flush nil)
                                  (vertex-list '(#f(0.5 0 0) #f(-0.5 0 0) #f(0 0.01 0) #f(0 -0.01 0))) (unilateral t))
   (let ((color-list '(#f(1 0 0) #f(0 1 0) #f(0 0 1))) (distributed-fz-vec) (point-num))
-    (unless (boundp '*cop*) (setq *cop* (make-cylinder 5 0.1)) (objects *cop*))
 
     (multiple-value-setq (A B force-point-list dxy-list) (get-convert-matrix cur-pos cur-rot v-dt w-dt mu :draw t :size 3 :grid grid :vertex-list vertex-list));; [m]
     (setq point-num (length (matrix-row A 0)))
@@ -109,7 +108,7 @@
         )
 
       ;; draw cop
-      (send *cop* :locate (v+ cur-pos (scale 1000 (float-vector (/ (elt moment-vec 1) (elt force-vec 2) -1) (/ (elt moment-vec 0) (elt force-vec 2)) 0))) :world)
+      (send *irtviewer* :viewer :draw-circle (make-coords :pos (v+ cur-pos (scale 1000 (float-vector (/ (elt moment-vec 1) (elt force-vec 2) -1) (/ (elt moment-vec 0) (elt force-vec 2)) 0)))) :radius 10 :flush nil)
       )
 
     (when flush
