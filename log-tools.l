@@ -90,7 +90,7 @@
 
 ;; 新システム
 (defun save-log-new (fname parse-flg log-dir)
-  (let ( machine-name raw-date date path sim-flg fstream uname (org-fname "test") )
+  (let ( machine-name raw-date date path fstream uname (org-fname "test") )
 
     ;; 日付追加
     (setq raw-date (unix:localtime))
@@ -99,10 +99,12 @@
     (setq org-fname (format nil "~a_~a" org-fname date))
     (send *ri* :save-log (format nil "/tmp/~a" org-fname) :set-robot-date-string nil)
 
-    (setq sim-flg (ros::get-param "use_sim_time" nil));; シミュレーションフラグ
-    
     (setq fname (read-line (piped-fork (format nil "zenity --entry --title \"ファイル名\" --text=\"ログファイルの保存名\" --entry-text=\"~s\"" fname))))
-    (setq fname (format nil "~a_~a_~a" fname (send *robot* :name) date))
+    (let ((platform-name ""))
+      (cond
+       ((is-choreonoid) (setq platform-name "choreonoid_"))
+       ((is-simulation) (setq platform-name "hrpsys-simulator_")))
+      (setq fname (format nil "~a~a_~a_~a" platform-name fname (send *robot* :name) date)))
 
 		;; コピー先設定
     (setq path (format nil "/home/~a/~a/~a/~a"
@@ -111,7 +113,7 @@
 
     ;; コピー
     (cond
-     ( sim-flg 
+     ( (is-simulation) 
        ;; (setq uname (unix:getenv "USER")
 			 ;; 			 cp-command "cp"
 			 ;; 			 machine-name (unix:system "uname -n"))
