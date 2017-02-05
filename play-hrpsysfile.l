@@ -64,14 +64,14 @@
 ;;   (send *gnuplot* :command "set size 1.5,1")(send *gnuplot* :command "set size 1,1"))
 
 ;; 実機かシミュレーションか判定
-(defun check-sim ()
+(defun is-simulation ()
   (if (ros::get-param "use_sim_time" nil);; シミュレーションフラグ
       t
     nil)
   )
 
 (defun is-choreonoid ()
-  (if (and (check-sim) (ros::get-param "/multisense/range_bridge/frame_id" nil)) t nil))
+  (if (and (is-simulation) (ros::get-param "/multisense/range_bridge/frame_id" nil)) t nil))
 
 ;; posファイルの関節数を修正する
 (defun modify-posfile (path fname)
@@ -83,7 +83,7 @@
 
 ;; 実際に実機またはローカルの/tmpにファイルをコピー
 (defun exec-copy (path fname)
-  (if (check-sim) 
+  (if (is-simulation) 
       ;; hrpsysシミュレータ用 localの/tmpにコピー
       (unix::system (concatenate string "cp " path fname ".* /tmp/" ) )
     ;; 実機
@@ -182,7 +182,7 @@
     (send *ri* :set-st-param :emergency-check-mode 0)
     (warn "disable emergency-check~%"))
   (send *ri* :set-log-maxlength (* 500 25))
-  (when (or (not (check-sim)) (is-choreonoid))
+  (when (or (not (is-simulation)) (is-choreonoid))
     (warn "start-st~%")
     (send *ri* :start-st))
   )
