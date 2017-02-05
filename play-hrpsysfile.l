@@ -205,7 +205,7 @@
   (unix:sleep sleep-time)
   (when save-log
     (send *ri* :start-log)
-    (setq sleep-time (round (+ (/ tm 2) (* 0.002 (read (piped-fork (concatenate string "cat " local-path fname ".pos" " | wc -l")))))))
+    (setq sleep-time (round (+ (/ tm 2) (* 0.002 (read (piped-fork (concatenate string "cat " local-path *__fname__* ".pos" " | wc -l")))))))
     (warn "sleep ~a[sec]~%" sleep-time)
     (unix:sleep sleep-time)
     (unix:sleep sleep-time)
