@@ -49,7 +49,7 @@
             vi-dt (v+ v-dt (v* w-dt ri));; 3dof world [m]
             dxy (subseq (normalize-vector vi-dt) 0 2));; 2dof world [m]
 
-      (if draw (send *viewer* :draw-arrow (v+ cur-pos ri) (v+ (v+ cur-pos ri) (scale size vi-dt))))
+      (if draw (send *viewer* :draw-arrow (scale 1e3 (v+ cur-pos ri)) (scale 1e3 (v+ (v+ cur-pos ri) (scale size vi-dt))) :color #f(0 1 1)))
 
       (setq r-2dof-closs-vec (float-vector (elt ri 1) (* -1 (elt ri 0))));; 2dof [m]
       (push (transpose (matrix (concatenate float-vector #f(1) r-2dof-closs-vec))) a-list)
@@ -64,6 +64,7 @@
       )
 
     (if flush (send *viewer* :flush))
+
     (list (apply #'concatenate-matrix-row (reverse a-list))
           (apply #'concatenate-matrix-row (reverse b-list))
           (reverse force-point-list)
@@ -71,10 +72,10 @@
   ))
 
 (defun calc-distributed-fz (&key (force-vec) (moment-vec) (cur-pos #f(0 0 0)) (cur-rot (unit-matrix)) (v-dt #f(0 0 0)) (w-dt #f(0 0 0)) (mu 0.5) (grid '(1 1)) (flush nil)
-                                 (vertex-list '(#f(0.5 0 0) #f(-0.5 0 0) #f(0 0.01 0) #f(0 -0.01 0))) (unilateral t))
+                                 (vertex-list '(#f(0.5 0 0) #f(-0.5 0 0) #f(0 0.01 0) #f(0 -0.01 0))) (unilateral t) (draw nil))
   (let ((color-list '(#f(1 0 0) #f(0 1 0) #f(0 0 1))) (distributed-fz-vec) (point-num))
 
-    (multiple-value-setq (A B force-point-list dxy-list) (get-convert-matrix cur-pos cur-rot v-dt w-dt mu :draw t :size 3 :grid grid :vertex-list vertex-list));; [m]
+    (multiple-value-setq (A B force-point-list dxy-list) (get-convert-matrix cur-pos cur-rot v-dt w-dt mu :draw draw :size 3 :grid grid :vertex-list vertex-list));; [m]
     (setq point-num (length (matrix-row A 0)))
 
     (if unilateral
@@ -98,6 +99,7 @@
 
       ;; draw distributed force
       (mapc #'(lambda (force-point fz dxy)
+                (send *viewer* :draw-arrow force-point (v+ force-point (concatenate float-vector (scale 1 dxy) #f(0))) :color #f(1 1 1))
                 (send *viewer* :draw-arrow force-point (v+ force-point (concatenate float-vector (scale (* mu fz -1) dxy) (float-vector fz))) :color #f(1 1 1)))
             force-point-list (coerce distributed-fz-vec cons) dxy-list)
 
