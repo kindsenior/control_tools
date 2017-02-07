@@ -48,7 +48,7 @@
                   (warning-message 3 "(copy-files :fname <FILE NAME> :sample-name <SAMPLE NAME> :real t)~%")
                   (warning-message 3 "(prepare-experiment)~%")
                   (warning-message 3 "(init-pose :fname <FILE NAME> :sample-name <SAMPLE NAME> :real t)~%")
-                  (warning-message 3 "(play-hrpsysfile :fname <FILE NAME> :real t)~%")
+                  (warning-message 3 "(play-hrpsysfile :fname <FILE NAME> :sample-name <SAMPLE NAME> :use-init-file nil :real t)~%")
                   (warning-message 3 "(save-log :fname <FILE NAME> :add-fname <FILE NAME OPTION>)~%")
                   (warn "~%")
                   (warning-message 3 "(set-pgain <l-crotch dgain>)~%")
@@ -167,6 +167,7 @@
   ))
 
 (defun prepare-experiment ()
+  (warn "(prepare-experiment)~%")
   (when (= (send (send *ri* :get-auto-balancer-param) :controller_mode) 1)
     (warn "stop-st~%")
     (send *ri* :stop-st)
@@ -227,7 +228,7 @@
   (when save-log
     (warn "start-log~%")
     (send *ri* :start-log)
-    (warn "sleep ~a[sec]~%" sleep-time)
+    (warn "sleep ~a[sec] during motion~%" sleep-time)
     (unix:sleep sleep-time)
     (save-log))
   ))
@@ -318,7 +319,7 @@
 ;; モーションの初期姿勢へ遷移 (hrpsysシーケンスファイルの1行目のみを実行)
 (defun init-pose (&key (fname "SampleMotion") (tm 10) (real nil) (plugin t) (sample-name "ShuffleSample") (wait nil))
   (let* ( (motionname (car (reg-split "_"  fname))) (path) )
-    (warn "now moving to initial pose of ~s in ~s sec~%" fname tm)
+    (warn "(init-pose) now moving to initial pose of ~s in ~s sec~%" fname tm)
 
     (if plugin
       (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
