@@ -195,7 +195,7 @@
   (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l"))));; dt=0.002 sec
   )
 
-(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t) (sample-name "ShuffleSample"))
+(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t) (sample-name "ShuffleSample") (use-init-file nil))
   (let (path local-path motion-time)
    (if plugin
        (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
@@ -205,6 +205,16 @@
   (setq motion-time (get-motion-time local-path *__fname__*))
 
   (prepare-experiment)
+  (if use-init-file
+      (let ((__init-fname__ (concatenate string *__fname__* "-init"));; fname-init
+            (init-fname (concatenate string fname "-init")));; _fname-init
+        (copy-files :fname __init-fname__ :sample-name sample-name :real t)
+        (warn "now moving to initial pose by .pseq file~%")
+        (send *ri* :load-pattern (concatenate string path init-fname) 3)
+        (unix:sleep 3)
+        )
+    (init-pose :fname *__fname__* :real t :wait t :time tm));; tm sec
+
   (warning-message 3 "Push Enter to start~%")
   (do-until-key)
   (when real
@@ -223,8 +233,8 @@
   ))
 
 (defun play-hrpsysfile (&rest args &key fname (real nil) (save-log t) (tm 10) &allow-other-keys)
-  (when (boundp '*ci*) (play-hrpsysfile-old  :fname fname :real real :save-log save-log))
-  (when (boundp '*ri*) (play-hrpsysfile-impl :fname fname :real real :save-log save-log :tm tm))
+  (when (boundp '*ci*) (apply #'play-hrpsysfile-old args))
+  (when (boundp '*ri*) (apply #'play-hrpsysfile-impl args))
   )
 
 (defun play-demo ( &key (music-file "/home/jskuser/love-cir_demo_x82.wmv") )
