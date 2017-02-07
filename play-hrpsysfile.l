@@ -220,9 +220,9 @@
   (do-until-key)
   (when real
     (setq path "/tmp/")
-    (send *ri* :load-pattern (concatenate string path fname) tm) )
-  (setq sleep-time (round (* tm 0.8)))
-  (warn "sleep ~a[sec]~%" sleep-time)
+    (send *ri* :load-pattern (concatenate string path fname) 0) );; 0sec
+  (setq sleep-time 0)
+  (warn "sleep ~a[sec] before initial pose~%" sleep-time);; 0sec
   (unix:sleep sleep-time)
   (setq sleep-time (round (+ (/ tm 2.0) motion-time)))
   (when save-log
