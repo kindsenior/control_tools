@@ -296,6 +296,15 @@
 
     ))
 
+;; (defun get-init-contact-state (path fname)
+;;   (let ( (file (concatenate string path fname ".optionaldata")) )
+;;     (with-open-file
+;;      (f file :direction :input)
+;;      (let ( (eof (gensym)) )
+;;        (subseq (mapcar #'read-from-string (reg-split " " (read-line f nil eof))) 1 5);; return contact state list(4 limbs)
+;;        ))
+;;     ))
+
 ;; モーションの初期姿勢へ遷移 (hrpsysシーケンスファイルの1行目のみを実行)
 (defun init-pose (&key (fname "SampleMotion") (tm 10) (real nil) (plugin t) (sample-name "ShuffleSample") (wait nil))
   (let* ( (motionname (car (reg-split "_"  fname))) (path) )
@@ -304,6 +313,13 @@
     (if plugin
       (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
       (setq path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")))
+
+    ;; (setq contact-state-list (get-init-contact-state path fname))
+    ;; (set-current-pose :contact-state-list '(1 1 0 0) :leg-option :lleg :tm 5 :zmp-offset #f(0 -10 0))
+    ;; (warn "now moving centroid on foot of init pose's contact state by load-pattern~%")
+    ;; (unix:sleep 5)
+    ;; (set-current-pose :contact-state-list contact-state-list :leg-option :lleg :tm 0 :zmp-offset #f(0 -10 0))
+    ;; (warn "change contact state by load-pattern~%")
 
     ;;fname->fname_init
     (mapc #'(lambda (extemtion)
