@@ -297,8 +297,9 @@
     ))
 
 ;; モーションの初期姿勢へ遷移 (hrpsysシーケンスファイルの1行目のみを実行)
-(defun init-pose (&key (fname "SampleMotion") (tm 10) (real nil) (plugin t) (sample-name "ShuffleSample"))
+(defun init-pose (&key (fname "SampleMotion") (tm 10) (real nil) (plugin t) (sample-name "ShuffleSample") (wait nil))
   (let* ( (motionname (car (reg-split "_"  fname))) (path) )
+    (warn "now moving to initial pose of ~s in ~s sec~%" fname tm)
 
     (if plugin
       (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
@@ -334,6 +335,7 @@
     (unix::system (concatenate string "rm -f " path fname "_init.*"));; 一次生成ファイル削除
     (unix::system (concatenate string "rm -f " path fname "_init_.*"));; 一次生成ファイル削除
 
+    (if wait (unix:sleep (round tm)))
     ))
 
 (defun init-landing-pose (&key (fname "SampleMotion") (tm 2000) (real nil) (plugin t) (sample-name "ShuffleSample"))
