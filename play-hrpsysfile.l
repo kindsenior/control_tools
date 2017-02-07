@@ -188,29 +188,36 @@
     (warn "start-st~%")
     (send *ri* :start-st)
     (unix:sleep 3))
+
+  )
+
+(defun get-motion-time (path fname)
+  (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l"))));; dt=0.002 sec
   )
 
 (defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t) (sample-name "ShuffleSample"))
-  (let (path local-path)
+  (let (path local-path motion-time)
    (if plugin
        (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
      (setq local-path (concatenate string "/home/" (unix::getenv "USER") "/" (unix::getenv "CNOID_WORKSPACE") "/" (send *robot* :name) "/" motionname "/")))
 
+  (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
+  (setq motion-time (get-motion-time local-path *__fname__*))
+
   (prepare-experiment)
   (warning-message 3 "Push Enter to start~%")
   (do-until-key)
-  (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
   (when real
     (setq path "/tmp/")
     (send *ri* :load-pattern (concatenate string path fname) tm) )
   (setq sleep-time (round (* tm 0.8)))
   (warn "sleep ~a[sec]~%" sleep-time)
   (unix:sleep sleep-time)
+  (setq sleep-time (round (+ (/ tm 2.0) motion-time)))
   (when save-log
+    (warn "start-log~%")
     (send *ri* :start-log)
-    (setq sleep-time (round (+ (/ tm 2) (* 0.002 (read (piped-fork (concatenate string "cat " local-path *__fname__* ".pos" " | wc -l")))))))
     (warn "sleep ~a[sec]~%" sleep-time)
-    (unix:sleep sleep-time)
     (unix:sleep sleep-time)
     (save-log))
   ))
