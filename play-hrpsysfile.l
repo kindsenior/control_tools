@@ -346,7 +346,8 @@
     (set-current-pose)
   ))
 
-(defun set-current-pose (&key (tm 10) (zmp-offset #f(0 0 0)) (lcop-offset #f(0 0)) (rcop-offset #f(0 0)))
+(defun set-current-pose (&key (tm 10) (zmp-offset #f(0 0 0)) (lcop-offset #f(0 0)) (rcop-offset #f(0 0)) (wait nil)
+                              (contact-state-list '(1 1 0 0)) (leg-option :both))
   (let* ( (zmp) (fz) (lwrench) (rwrench)
           (fname-with-path "/tmp/set-current-pose")
           ;; (waist-coord)
@@ -356,7 +357,8 @@
           (wrenchfile   (format nil "~a.wrenches"     fname-with-path)) wf
           (optionalfile (format nil "~a.optionaldata" fname-with-path)) of )
 
-    (send *robot* :fix-leg-to-coords (make-coords))
+    (send *robot* :fix-leg-to-coords (make-coords) leg-option)
+    (send *robot* :move-centroid-on-foot leg-option '(:lleg :rleg))
     (setq waist-coord (reduce #'(lambda (coord0 coord1) (make-coords :pos (scale 0.5 (v+ (send coord0 :worldpos) (send coord1 :worldpos)))))
                              (send-all (send-all (send *robot* :legs :crotch-r) :child-link) :worldcoords)))
 
@@ -414,13 +416,17 @@
     ;; optionalfile作成
     (with-open-file
      (of optionalfile :direction :output)
-     (format of "0.0 1 1 0 0 5 5 5 5~%")
+     ;; (format of "0.0 1 1 0 0 5 5 5 5~%")
+     (format of "0.0")
+     (mapc #'(lambda (contact-state) (format of " ~s" contact-state)) contact-state-list)
+     (format of " 5 5 5 5~%")
      )
 
     (exec-copy "/tmp/" "set-current-pose")
 
     (send *ri* :load-pattern "/tmp/set-current-pose" tm)
 
+    (if wait (unix:sleep (round tm)))
     ))
 
 (defun reset-pose (&rest args &key &allow-other-keys)
