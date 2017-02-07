@@ -107,7 +107,7 @@
   (let ( motionname
          zmpline velfile optfile posfile zmpfile path
          ;; (extention-list '("pos" "hip" "waist" "zmp" "vel" "optionaldata" "wrenches"))
-         (extention-list '("pos" "waist" "zmp" "hip" "optionalData" "wrenches"))
+         (extention-list '("pos" "waist" "zmp" "hip" "optionaldata" "wrenches"))
          )
 
     (if (not ofname) (setq ofname fname))
@@ -298,7 +298,7 @@
     (mapc #'(lambda (extemtion)
               (unix:system (concatenate string "head -n 1 " path fname "." extemtion "| cat >  " path fname "_init." extemtion)) )
           ;; (list "hip" "waist" "zmp" "vel" "pos" "optionaldata" "wrenches")
-          (list "waist" "hip" "zmp" "pos" "optionalData" "wrenches") )
+          (list "waist" "hip" "zmp" "pos" "optionaldata" "wrenches") )
 
     ;; fname_init->_fname_init
     (copy-files :fname (concatenate string fname "_init") :real real :remove-last-row nil)
