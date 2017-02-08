@@ -90,7 +90,7 @@
 
 ;; 新システム
 (defun save-log-new (fname parse-flg log-dir)
-  (let ( machine-name raw-date date path fstream uname (org-fname "test") )
+  (let ( machine-name raw-date date path fstream uname (org-fname "test") (eof (gensym)) )
 
     ;; 日付追加
     (setq raw-date (unix:localtime))
@@ -99,48 +99,52 @@
     (setq org-fname (format nil "~a_~a" org-fname date))
     (send *ri* :save-log (format nil "/tmp/~a" org-fname) :set-robot-date-string nil)
 
-    (setq fname (read-line (piped-fork (format nil "zenity --entry --title \"ファイル名\" --text=\"ログファイルの保存名\" --entry-text=\"~s\"" fname))))
-    (let ((platform-name ""))
-      (cond
-       ((is-choreonoid) (setq platform-name "choreonoid_"))
-       ((is-simulation) (setq platform-name "hrpsys-simulator_")))
-      (setq fname (format nil "~a~a_~a_~a" platform-name fname (send *robot* :name) date)))
+    (setq fname (read-line (piped-fork (format nil "zenity --entry --title \"ファイル名\" --text=\"ログファイルの保存名\" --entry-text=\"~s\"" fname)) nil eof))
+    (if (eq eof fname)
+        nil
+      (progn
+        (let ((platform-name ""))
+          (cond
+           ((is-choreonoid) (setq platform-name "choreonoid_"))
+           ((is-simulation) (setq platform-name "hrpsys-simulator_")))
+          (setq fname (format nil "~a~a_~a_~a" platform-name fname (send *robot* :name) date)))
 
-		;; コピー先設定
-    (setq path (format nil "/home/~a/~a/~a/~a"
-                       (unix:getenv "USER") log-dir (send *robot* :name) fname) )
-    (unix:system (format nil "mkdir -p ~a" path))
+        ;; コピー先設定
+        (setq path (format nil "/home/~a/~a/~a/~a"
+                           (unix:getenv "USER") log-dir (send *robot* :name) fname) )
+        (unix:system (format nil "mkdir -p ~a" path))
 
-    ;; コピー
-    (cond
-     ( (is-simulation) 
-       ;; (setq uname (unix:getenv "USER")
-			 ;; 			 cp-command "cp"
-			 ;; 			 machine-name (unix:system "uname -n"))
-       ;; (with-open-file (fstream "/etc/hostname" :direction :input)
-       ;;                 (let ( (eof (gensym)) ) (setq machine-name (read-line fstream nil eof)) ))
-			 (unix:system (concatenate string "cp /tmp/" org-fname "* " path))
-			 )
-     ( t
-       (setq cp-command "scp")
-       (cond
-        ( (equal (send *robot* :name) "HRP2JSK")    (setq uname "grxuser" machine-name "hrp2007c") )
-        ( (equal (send *robot* :name) "HRP2JSKNT")  (setq uname "grxuser" machine-name "hrp2016c") )
-        ( (equal (send *robot* :name) "HRP2JSKNTS") (setq uname "grxuser" machine-name "hrp2017c") )
-        ( (equal (send *robot* :name) "JAXON")      (setq uname "leus"    machine-name "jaxon")    )
-        ( (equal (send *robot* :name) "JAXON_RED")  (setq uname "leus"    machine-name "jaxonred") )
-        ( t (warning-message 1 "cannot use save-log in this robot~%") )
-        )
-			 (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/" org-fname "* " path))
-			 )
-     )
-    (unix:system (concatenate string "find " path "| rename 's/" org-fname "/" fname "/'"))
+        ;; コピー
+        (cond
+         ( (is-simulation) 
+           ;; (setq uname (unix:getenv "USER")
+           ;; 			 cp-command "cp"
+           ;; 			 machine-name (unix:system "uname -n"))
+           ;; (with-open-file (fstream "/etc/hostname" :direction :input)
+           ;;                 (let ( (eof (gensym)) ) (setq machine-name (read-line fstream nil eof)) ))
+           (unix:system (concatenate string "cp /tmp/" org-fname "* " path))
+           )
+         ( t
+           (setq cp-command "scp")
+           (cond
+            ( (equal (send *robot* :name) "HRP2JSK")    (setq uname "grxuser" machine-name "hrp2007c") )
+            ( (equal (send *robot* :name) "HRP2JSKNT")  (setq uname "grxuser" machine-name "hrp2016c") )
+            ( (equal (send *robot* :name) "HRP2JSKNTS") (setq uname "grxuser" machine-name "hrp2017c") )
+            ( (equal (send *robot* :name) "JAXON")      (setq uname "leus"    machine-name "jaxon")    )
+            ( (equal (send *robot* :name) "JAXON_RED")  (setq uname "leus"    machine-name "jaxonred") )
+            ( t (warning-message 1 "cannot use save-log in this robot~%") )
+            )
+           (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/" org-fname "* " path))
+           )
+         )
+        (unix:system (concatenate string "find " path "| rename 's/" org-fname "/" fname "/'"))
 
-    ;; (sys:thread-no-wait #'plot-rs :fname fname :mode :force :save t :create t)
-    (if parse-flg (sys:thread-no-wait #'prepare-plot :fname fname :create t))
-    ;; (sys:thread-no-wait #'plot-mu :fname fname :save t)
+        ;; (sys:thread-no-wait #'plot-rs :fname fname :mode :force :save t :create t)
+        (if parse-flg (sys:thread-no-wait #'prepare-plot :fname fname :create t))
+        ;; (sys:thread-no-wait #'plot-mu :fname fname :save t)
 
-    fname
+        fname
+        ))
     ))
 
 ;; プロットをアニメーションで表示
