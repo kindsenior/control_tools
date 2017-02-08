@@ -217,7 +217,7 @@
         (send *ri* :load-pattern (concatenate string path init-fname) 3)
         (unix:sleep 3)
         )
-    (init-pose :fname *__fname__* :real t :wait t :time tm));; tm sec
+    (init-pose :fname *__fname__* :real t :wait t :tm tm));; tm sec
 
   (warning-message 3 "Push Enter to start~%")
   (do-until-key)
