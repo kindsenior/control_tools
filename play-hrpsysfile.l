@@ -83,6 +83,7 @@
 
 ;; 実際に実機またはローカルの/tmpにファイルをコピー
 (defun exec-copy (path fname)
+  (warn "~%(exec-copy) now copying files ~a~a~%" path fname)
   (if (is-simulation) 
       ;; hrpsysシミュレータ用 localの/tmpにコピー
       (unix::system (concatenate string "cp " path fname ".* /tmp/" ) )
@@ -135,7 +136,7 @@
             extention-list))
 
     ;; waist/hip合成 _fname->fname_->_fname
-    (warn "~%now converting waist from waist and hip~%")
+    (warn "~%now converting waist from waist and hip of _~s~%" fname)
     (unix:system (concatenate string "cat " path "_" fname ".waist | cut -d' ' -f1-4 | cat > " waistfile "_"))
     (unix:system (concatenate string "cat " path "_" fname ".hip   | cut -d' ' -f2-4 | cat > " hipfile   "_"))
     (unix:system (concatenate string "paste " waistfile "_ " hipfile "_ | cat > " path "_" fname ".waist"))
@@ -145,7 +146,6 @@
     (modify-posfile path (concatenate string "_" fname))
 
     ;; ファイルコピー
-    (warn "~%now copying files~%")
     (exec-copy path (concatenate string "_" fname))
 
     (unix::system (concatenate string "rm -f " path "_" fname ".*"));; 一次生成ファイル削除
@@ -225,6 +225,7 @@
     (warn "start-log~%")
     (send *ri* :start-log))
   (when real
+    (warn "load-pattern~%")
     (setq path "/tmp/")
     (send *ri* :load-pattern (concatenate string path fname) 0) );; 0sec -> default 1sec?
   (setq sleep-time 0)
