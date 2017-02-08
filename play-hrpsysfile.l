@@ -180,7 +180,10 @@
   (warn "now moving to set-current-pose by load-pattern~%")
   (set-current-pose :tm 2 :wait t)
 
-  ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop2)
+  ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop)
+  (send *ri* :set-st-param :st-algorithm :eefmqpcop2)
+  (send *ri* :set-st-param :eefm-ee-forcemoment-distribution-weight
+        (list #f(0 0 1 1 1 0) #f(0 0 1 1 1 0) #f(0 0 0 0 0 0) #f(0 0 0 0 0 0)))
   (unless (= (send (send *ri* :get-st-param) :emergency_check_mode) 0)
     (warn "disable emergency-check~%")
     (send *ri* :set-st-param :emergency-check-mode 0))
