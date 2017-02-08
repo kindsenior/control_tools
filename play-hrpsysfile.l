@@ -221,16 +221,18 @@
 
   (warning-message 3 "Push Enter to start~%")
   (do-until-key)
+  (when save-log
+    (warn "start-log~%")
+    (send *ri* :start-log))
   (when real
     (setq path "/tmp/")
-    (send *ri* :load-pattern (concatenate string path fname) 0) );; 0sec
+    (send *ri* :load-pattern (concatenate string path fname) 0) );; 0sec -> default 1sec?
   (setq sleep-time 0)
   (warn "sleep ~a[sec] before initial pose~%" sleep-time);; 0sec
   (unix:sleep sleep-time)
-  (setq sleep-time (round (+ (/ tm 2.0) motion-time)))
+
+  (setq sleep-time (round (+ 3 motion-time)))
   (when save-log
-    (warn "start-log~%")
-    (send *ri* :start-log)
     (warn "sleep ~a[sec] during motion~%" sleep-time)
     (unix:sleep sleep-time)
     (save-log))
