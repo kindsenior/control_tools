@@ -227,12 +227,12 @@
   (when real
     (warn "load-pattern~%")
     (setq path "/tmp/")
-    (send *ri* :load-pattern (concatenate string path fname) 0) );; 0sec -> default 1sec?
-  (setq sleep-time 0)
-  (warn "sleep ~a[sec] before initial pose~%" sleep-time);; 0sec
+    (send *ri* :load-pattern (concatenate string path fname) 1) );; default 1sec in load-pattern?
+  (setq sleep-time 1)
+  (warn "sleep ~a[sec] before initial pose~%" sleep-time);; 1sec
   (unix:sleep sleep-time)
 
-  (setq sleep-time (round (+ 3 motion-time)))
+  (setq sleep-time (round (+ 2 motion-time)))
   (when save-log
     (warn "sleep ~a[sec] during motion~%" sleep-time)
     (unix:sleep sleep-time)
