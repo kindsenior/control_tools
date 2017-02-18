@@ -1,6 +1,6 @@
 (load "package://eus_qpoases/euslisp/eus-qpoases.l")
 (load "log-tools.l")
-(unless (boundp '*irtviewer*) (make-irtviewer))
+(unless (boundp '*irtviewer*) (make-irtviewer) (send *irtviewer* :resize 1000 1000))
 (send *irtviewer* :change-background #f(0.5 0.5 0.5))
 
 (defun update-robot-state (robot-state &key (mode :reference-root) (rleg-fix nil))

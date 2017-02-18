@@ -230,6 +230,43 @@
     (* (round (/ (- (send (cadr target-list) :time) (send (car target-list) :time)) accuracy)) accuracy)
   ))
 
+;; (defun plot-foot-pos-rot
+(defun plot-foot-rot
+  (&key (rs-list *rs-list*)
+        (add-fname nil) (fname "Reference foot yaw angle") ;; (fname "Reference foot position and yaw angle")
+        (axis 0) (cutoff-f nil) (xrange nil) (yrange) (limb '(:lleg :rleg)) (save t))
+  (let* ( (xrange (calc-xrange xrange rs-list)) (data (subseq *rs-list* (car xrange) (cadr xrange))) (ly-list nil) (lyaw-list nil) (ry-list nil) (ryaw-list nil))
+    (if yrange (set-yrange yrange))
+    (mapc #'(lambda (rs)
+              (send *robot* :newcoords (send rs :root-coords))
+              (send *robot* :angle-vector (send rs :reference-angle-vector))
+              (when (find :rleg limb)
+                (push-back (elt (send *robot* :rleg :end-coords :worldpos) 1) ry-list)
+                (push-back (rad2deg (elt (car (rpy-angle (send *robot* :rleg :end-coords :worldrot))) 0)) ryaw-list))
+              (when (find :lleg limb)
+                (push-back (elt (send *robot* :lleg :end-coords :worldpos) 1) ly-list)
+                (push-back (- (rad2deg (elt (car (rpy-angle (send *robot* :lleg :end-coords :worldrot))) 0)) 0.5) lyaw-list)))
+          data)
+    (graph-view
+     (delete nil (list 
+                  (if (find :rleg limb) ryaw-list)
+                  ;; (if (find :rleg limb) ry-list)
+                  (if (find :lleg limb) lyaw-list)
+                  ;; (if (find :lleg limb) ly-list)
+                  ))
+     (mapcar #'(lambda (x) (send x :time)) data)
+     :keylist (delete nil (list (if (find :rleg limb) "rleg yaw") ;; (if (find :rleg limb) "rleg y")
+                                (if (find :lleg limb) "lleg yaw") ;; (if (find :lleg limb) "lleg y")
+                                ))
+     :title fname
+     :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
+     :dump-graph save
+     :xlabel "Time[s]"
+     ;; :ylabel "Position[m] or angle[degree]"
+     :ylabel "Angle[degree]"
+     )
+    ))
+
 (defun plot-foot-force
   (&key (rs-list *rs-list*)
         (add-fname nil) (fname "Actual and Reference and Modified Reference Force")
