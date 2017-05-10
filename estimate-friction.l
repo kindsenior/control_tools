@@ -174,8 +174,6 @@
              )
            )
 
-         (setq last-pos cur-pos
-               last-rot cur-rot)
          (update-robot-state rs :mode mode :rleg-fix rleg-fix)
          (send *viewer* :flush)
          (send *viewer* :draw-objects :flush nil)
