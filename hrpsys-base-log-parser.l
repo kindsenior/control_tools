@@ -296,7 +296,7 @@
 (defun plot-foot-cop
   (&key (rs-list *rs-list*)
         (add-fname nil) (fname "Actual and Reference COP")
-        (axis 0) (cutoff-f nil) (xrange nil) (yrange) (limb '(:lleg :rleg)) (save t))
+       (axis 0) (cutoff-f nil) (xrange nil) (yrange) (start-offset 0) (limb '(:lleg :rleg)) (save nil))
   (let* ( (xrange (calc-xrange xrange rs-list)) (data (subseq *rs-list* (car xrange) (cadr xrange))))
     (if yrange (set-yrange yrange))
     (if save (set-plot-common-config))
@@ -306,7 +306,7 @@
                        (if (find :lleg limb) (mapcar #'(lambda (x) (calc-cop axis (subseq (send x :get :sh-lleg-ref-force) 0 3) (subseq (send x :get :sh-lleg-ref-force) 3 6))) data))
                        (if (find :lleg limb) (low-pass-filter (mapcar #'(lambda (x) (calc-cop axis (send x :get :lleg-force-vector) (send x :get :lleg-moment-vector))) data) :cutoff-f cutoff-f))
                        ))
-     (mapcar #'(lambda (x) (send x :time)) data)
+     (mapcar #'(lambda (x) (- (send x :time) start-offset)) data)
      :keylist (delete nil (list (if (find :rleg limb) "ref rleg COP x") (if (find :rleg limb) "act rleg COP x")
                                 (if (find :lleg limb) "ref lleg COP x") (if (find :lleg limb) "act lleg COP x")
                                 ))
