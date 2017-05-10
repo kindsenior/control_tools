@@ -299,6 +299,7 @@
         (axis 0) (cutoff-f nil) (xrange nil) (yrange) (limb '(:lleg :rleg)) (save t))
   (let* ( (xrange (calc-xrange xrange rs-list)) (data (subseq *rs-list* (car xrange) (cadr xrange))))
     (if yrange (set-yrange yrange))
+    (if save (set-plot-common-config))
     (graph-view
      (delete nil (list (if (find :rleg limb) (mapcar #'(lambda (x) (calc-cop axis (subseq (send x :get :sh-rleg-ref-force) 0 3) (subseq (send x :get :sh-rleg-ref-force) 3 6))) data))
                        (if (find :rleg limb) (low-pass-filter (mapcar #'(lambda (x) (calc-cop axis (send x :get :rleg-force-vector) (send x :get :rleg-moment-vector))) data) :cutoff-f cutoff-f))
@@ -315,6 +316,7 @@
      :xlabel "Time[s]"
      :ylabel "COP[m]"
      )
+    (if save (unset-plot-common-config))
     ))
 
 (defun calc-r (alpha-zmp)

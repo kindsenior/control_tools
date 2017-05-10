@@ -38,6 +38,13 @@
    (send *gnuplot* :command "set grid")(send *gnuplot* :command "set size 1,1") )
  )
 
+(defun set-plot-common-config ()
+  (send *gp* :command "set size 1,0.6")
+  )
+(defun unset-plot-common-config ()
+  (send *gp* :command "set size 1,1")
+  )
+
 (defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
   ;; デフォルトログファイル名
   (if (not fname)
