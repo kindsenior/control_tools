@@ -120,7 +120,7 @@
     (list A B distributed-fz-vec)
     ))
 
-(defun estimate-foot-force-distribution (&key (grid '(1 1)) (step 20) (mode :reference-root) (mu 0.6) (sleep-time 0) (start-time 5) (stop-time 15) (rleg-fix t)
+(defun estimate-foot-force-distribution (&key (grid '(1 1)) (step 20) (mode :reference-root) (mu 0.6) (sleep-time 0) (start-time 5) (stop-time 15) (rleg-fix t) (start-offset 0)
                                               (vertex-list (list (scale 1e-3 #f(130 75 0)) (scale 1e-3 #f(-100 -55 0)))))
   (let ( (xrange (calc-xrange (list start-time stop-time) *rs-list*))
                  last-pos last-rot cur-coord cur-pos cur-rot (dt (calc-dt *rs-list*))v-dt w-dt r-2dof-closs-vec A B
@@ -129,7 +129,7 @@
                  (tm-list nil) (act-fx-list nil) (estimated-fx-list nil) (act-fy-list nil) (estimated-fy-list nil)
                  (act-nz-list nil) (estimated-nz-list nil) (vy-list nil) (wz-list nil))
     (warn "~%estimate-foot-force-distribution()~%")
-    (warn "~s->~s[sec]~%" (car xrange) (cadr xrange))
+    (warn "~s (~s[sec]) -> ~s (~s[sec])~%" (car xrange) start-time (cadr xrange) stop-time)
     (send *robot* :reset-pose);; for rleg-fix
     (update-robot-state (elt *rs-list* (car xrange)) :mode mode :rleg-fix rleg-fix)
     (setq last-pos (send *robot* :lleg :end-coords :worldpos)
@@ -162,7 +162,7 @@
                   (world-wrench (m* B (transpose (matrix distributed-fz-vec))))
                   (local-estimated-force  (send convert-coord :inverse-transform-vector (subseq world-wrench 0 3)))
                   (local-estimated-moemnt (send convert-coord :inverse-transform-vector (subseq world-wrench 3 6))))
-             (push-back (* i dt) tm-list)
+             (push-back (- (* i dt) start-offset) tm-list)
              (push-back (elt local-force 0)  act-fx-list)
              (push-back (elt local-force 1)  act-fy-list)
              (push-back (elt local-moment 2) act-nz-list)
@@ -174,6 +174,8 @@
              )
            )
 
+         (setq last-pos cur-pos
+               last-rot cur-rot)
          (update-robot-state rs :mode mode :rleg-fix rleg-fix)
          (send *viewer* :flush)
          (send *viewer* :draw-objects :flush nil)
@@ -187,23 +189,24 @@
     (graph-view-with-filter (list act-nz-list estimated-nz-list (mapcar #'(lambda (wz) (* wz 0.2)) wz-list)) tm-list
                             :keylist '("act nz" "estimated nz" "wz*0.2")
                             :xlabel "Time [s]"  :ylabel "nz[Nm]"
-                            :xrange (list start-time stop-time)
+                            :xrange (list (- start-time start-offset) (- stop-time start-offset))
                             :title "Comparison between act and estiamted wrenches"
                             )
     (list tm-list wz-list act-nz-list estimated-nz-list)
     ))
 
-(defun compare-grid-difference (&key (start-time 7.8) (stop-time 8.7) (step 3) (grid-list '((1 1) (2 2) (3 3) (4 4))) (mu 0.6) (save nil) (add-fname nil))
-  (let (estimated-nz-lists tm-list wz-list act-nz-list estimated-nz-list (fname "Comparison of yaw moment estimation among division number"))
+(defun compare-grid-difference (&key (start-time 7.8) (stop-time 8.7) (start-offset 0) (step 3) (grid-list '((1 1) (2 2) (3 3) (4 4))) (mu 0.6) (save nil) (add-fname nil))
+  (let ((fname "Comparison of yaw moment estimation among division number") estimated-nz-lists tm-list wz-list act-nz-list estimated-nz-list
+        (xrange (calc-xrange (list start-time stop-time) *rs-list*)))
     (setq estimated-nz-lists 
           (mapcar #'(lambda (grid) 
-                      (multiple-value-setq (tm-list wz-list act-nz-list estimated-nz-list) (estimate-foot-force-distribution :grid grid :step step :sleep-time 0 :mode :reference-root :start-time start-time :stop-time stop-time :mu mu))
+                      (multiple-value-setq (tm-list wz-list act-nz-list estimated-nz-list) (estimate-foot-force-distribution :grid grid :step step :sleep-time 0 :mode :reference-root :rleg-fix nil :start-time start-time :stop-time stop-time :start-offset start-offset :mu mu))
                       estimated-nz-list)
                   grid-list))
     (graph-view-with-filter (append (list (mapcar #'(lambda (wz) (* wz 0.2)) wz-list) act-nz-list) estimated-nz-lists) tm-list
                             :keylist (append '("yaw angular velocity" "actual moment z") (mapcar #'(lambda (grid) (format nil "estimated moment z(~sx~s division)" (1+ (car grid)) (1+ (cadr grid)))) grid-list))
                             :xlabel "Time [s]"  :ylabel "moment z[Nm]"
-                            :xrange (list start-time stop-time)
+                            :xrange (list (- start-time start-offset) (- stop-time start-offset))
                             :title fname
                             :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
                             :dump-graph save
