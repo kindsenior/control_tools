@@ -145,6 +145,7 @@
            )
          )
         (unix:system (concatenate string "find " path "| rename 's/" org-fname "/" fname "/'"))
+        (unix:system (concatenate string "find " path "| rename 's/" (send *robot* :name) "\\(Robot\\)/RobotHardware/'" ))
 
         ;; (sys:thread-no-wait #'plot-rs :fname fname :mode :force :save t :create t)
         (if parse-flg (sys:thread-no-wait #'prepare-plot :fname fname :create t))
