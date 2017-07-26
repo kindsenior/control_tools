@@ -222,7 +222,7 @@
         (send *ri* :load-pattern (concatenate string path init-fname) 3)
         (unix:sleep 3)
         )
-    (init-pose :fname *__fname__* :real t :wait t :tm tm));; tm sec
+    (init-pose :fname *__fname__* :sample-name sample-name :real t :wait t :tm tm));; tm sec
 
   (warning-message 3 "Push Enter to start~%")
   (do-until-key)
@@ -330,7 +330,7 @@
 ;; モーションの初期姿勢へ遷移 (hrpsysシーケンスファイルの1行目のみを実行)
 (defun init-pose (&key (fname "SampleMotion") (tm 10) (real nil) (plugin t) (sample-name "ShuffleSample") (wait nil))
   (let* ( (motionname (car (reg-split "_"  fname))) (path) )
-    (warn "(init-pose) now moving to initial pose of ~s in ~s sec~%" fname tm)
+    (warn "(init-pose) now moving to initial pose of ~s's ~s in ~s sec~%" sample-name fname tm)
 
     (if plugin
       (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
@@ -350,7 +350,7 @@
           (list "waist" "hip" "zmp" "pos" "optionaldata" "wrenches") )
 
     ;; fname_init->_fname_init
-    (copy-files :fname (concatenate string fname "_init") :real real :remove-last-row nil)
+    (copy-files :fname (concatenate string fname "_init") :sample-name sample-name :real real :remove-last-row nil)
 
     (when real
       (cond
