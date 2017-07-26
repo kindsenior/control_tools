@@ -46,7 +46,7 @@
                   (warning-message 3 "(create-robot-interface jaxon)~%")
                   (warning-message 3 "(scale-hrpsysfile :fname <FILE NAME>)~%")
                   (warning-message 3 "(copy-files :fname <FILE NAME> :sample-name <SAMPLE NAME> :real t)~%")
-                  (warning-message 3 "(prepare-experiment)~%")
+                  (warning-message 3 "(prepare-experiment :start-st t :set-pose t :st-algorithm :eefmqpcop2)~%")
                   (warning-message 3 "(init-pose :fname <FILE NAME> :sample-name <SAMPLE NAME> :real t)~%")
                   (warning-message 3 "(play-hrpsysfile :fname <FILE NAME> :sample-name <SAMPLE NAME> :use-init-file nil :real t)~%")
                   (warning-message 3 "(save-log :fname <FILE NAME> :add-fname <FILE NAME OPTION>)~%")
@@ -166,7 +166,7 @@
     (when impedance (send *ci* :start-impedance :lleg))
   ))
 
-(defun prepare-experiment ()
+(defun prepare-experiment (&key (start-st t) (st-algorithm :eefmqpcop2) (set-pose t))
   (warn "(prepare-experiment)~%")
   (when (= (send (send *ri* :get-auto-balancer-param) :controller_mode) 1)
     (warn "stop-st~%")
@@ -178,17 +178,18 @@
 
   (send *robot* :angle-vector (send *ri* :state :potentio-vector))
   (warn "now moving to set-current-pose by load-pattern~%")
-  (set-current-pose :tm 2 :wait t)
+  (when set-pose (set-current-pose :tm 2 :wait t))
 
+  (send *ri* :set-st-param :st-algorithm st-algorithm)
   ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop)
-  (send *ri* :set-st-param :st-algorithm :eefmqpcop2)
+  ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop2)
   (send *ri* :set-st-param :eefm-ee-forcemoment-distribution-weight
         (list #f(0 0 1 1 1 0) #f(0 0 1 1 1 0) #f(0 0 0 0 0 0) #f(0 0 0 0 0 0)))
   (unless (= (send (send *ri* :get-st-param) :emergency_check_mode) 0)
     (warn "disable emergency-check~%")
     (send *ri* :set-st-param :emergency-check-mode 0))
   (send *ri* :set-log-maxlength (* 500 25))
-  (when (or (not (is-simulation)) (is-choreonoid))
+  (when (and (or (not (is-simulation)) (is-choreonoid)) start-st)
     (warn "start-st~%")
     (send *ri* :start-st)
     (unix:sleep 3))
@@ -199,7 +200,7 @@
   (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l"))));; dt=0.002 sec
   )
 
-(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t) (sample-name "ShuffleSample") (use-init-file nil))
+(defun play-hrpsysfile-impl (&key fname (real nil) (tm 10) (save-log t) (plugin t) (sample-name "ShuffleSample") (use-init-file nil) (start-st t) (st-algorithm :eefmqpcop2) (set-pose t))
   (let (path local-path motion-time)
    (if plugin
        (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
@@ -208,7 +209,7 @@
   (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
   (setq motion-time (get-motion-time local-path *__fname__*))
 
-  (prepare-experiment)
+  (prepare-experiment :start-st start-st :set-pose set-pose :st-algorithm st-algorithm)
   (if use-init-file
       (let ((__init-fname__ (concatenate string *__fname__* "-init"));; fname-init
             (init-fname (concatenate string fname "-init")));; _fname-init
