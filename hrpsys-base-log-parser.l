@@ -30,7 +30,8 @@
 ;; (require "package://hrpsys_ros_bridge/euslisp/datalogger-log-parser.l")
 ;; (require "euslib/irteus_proposals/motion-lib-proposal.l")
 (warning-message 3 "loading test-st-state-estimate-data.l...~%")
-(require (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
+;; (require (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
+(require "~/prog/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l")
 (defvar *usage-funcs* nil)
 (unless (assoc :nozawa-log-plotter *usage-funcs*)
   (push (cons :nozawa-log-plotter

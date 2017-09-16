@@ -13,7 +13,8 @@
     )
   )
 
-(load (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/jsk/gnuplotlib.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
+;; (load (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/jsk/gnuplotlib.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
+(load "~/prog/euslib/jsk/gnuplotlib.l")
 
 (defvar *usage-funcs* nil)
 (unless (assoc :log-tools *usage-funcs*)
