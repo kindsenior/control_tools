@@ -135,11 +135,12 @@
          ( t
            (setq cp-command "scp")
            (cond
-            ( (equal (send *robot* :name) "HRP2JSK")    (setq uname "grxuser" machine-name "hrp2007c") )
-            ( (equal (send *robot* :name) "HRP2JSKNT")  (setq uname "grxuser" machine-name "hrp2016c") )
-            ( (equal (send *robot* :name) "HRP2JSKNTS") (setq uname "grxuser" machine-name "hrp2017c") )
-            ( (equal (send *robot* :name) "JAXON")      (setq uname "leus"    machine-name "jaxon")    )
-            ( (equal (send *robot* :name) "JAXON_RED")  (setq uname "leus"    machine-name "jaxonred") )
+            ( (equal (send *robot* :name) "HRP2JSK")    (setq uname "grxuser" machine-name "hrp2007c")  )
+            ( (equal (send *robot* :name) "HRP2JSKNT")  (setq uname "grxuser" machine-name "hrp2016c")  )
+            ( (equal (send *robot* :name) "HRP2JSKNTS") (setq uname "grxuser" machine-name "hrp2017c")  )
+            ( (equal (send *robot* :name) "JAXON")      (setq uname "leus"    machine-name "jaxon")     )
+            ( (equal (send *robot* :name) "JAXON_RED")  (setq uname "leus"    machine-name "jaxonred")  )
+            ( (equal (send *robot* :name) "JAXON_BLUE") (setq uname "leus"    machine-name "jaxonblue") )
             ( t (warning-message 1 "cannot use save-log in this robot~%") )
             )
            (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/" org-fname "* " path))
@@ -378,7 +379,7 @@
 (defun prepare-plot ( &key (create nil) (fname nil) (robot (class *robot*)) (rs-list))
   (let* ( (fname-with-path (parse-fname-with-path fname))
           (fname (parse-fname fname))
-          (rs-fname (concatenate string (reg-replace "[A-z,0-9,_,-]*$" "" fname-with-path) "rs-list.l")))
+          (rs-fname (concatenate string (reg-replace "[^\/]*$" "" fname-with-path) "rs-list.l")))
 
     (when (or (not (boundp '*log*)) create)
       (warning-message 3 "create new *log* from ~a~%" fname-with-path)
