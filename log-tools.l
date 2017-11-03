@@ -219,6 +219,9 @@
   fname
   )
 
+(defun get-parsed-fname (fname)
+  (list (parse-fname-with-path fname) (parse-fname fname)))
+
 (defun set-yrange (yrange)
   (send *gp* :command (format nil " set yrange [~a:~a]" (car yrange) (cdr yrange))))
 
@@ -377,9 +380,9 @@
 
 ;; *log* *rs-list* の作成, fname-with-pathのparse
 (defun prepare-plot ( &key (create nil) (fname nil) (robot (class *robot*)) (rs-list))
-  (let* ( (fname-with-path (parse-fname-with-path fname))
-          (fname (parse-fname fname))
-          (rs-fname (concatenate string (reg-replace "[^\/]*$" "" fname-with-path) "rs-list.l")))
+  (let ( fname-with-path fname rs-fname )
+    (multiple-value-setq (fname-with-path fname) (get-parsed-fname fname))
+    (setq rs-fname (concatenate string (reg-replace "[^\/]*$" "" fname-with-path) "rs-list.l"))
 
     (when (or (not (boundp '*log*)) create)
       (warning-message 3 "create new *log* from ~a~%" fname-with-path)
