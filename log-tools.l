@@ -22,6 +22,8 @@
               #'(lambda ()
                   (warn "~%log-tools.l~%")
                   (warning-message 3 "(save-log :fname <file-name> :add-fname <file-name-option> :type <:new or :old>)~%")
+                  (warning-message 3 "(prepare-plot) in log directory~%")
+                  (warning-message 3 "(get-parsed-fname nil) in log directory~%")
                   (warning-message 3 "(make-list-from-input :fname <motion-name>  :span <time-span> )~%")
                   (warning-message 3 "(make-list-and-file-from-log :start <start-index> :span <time-span>)~%")
                   (warning-message 3 "(save-list '(<list-name1> <list-name2>) :make-script t :type <log-type> :multi-plot nil)~%")
