@@ -88,6 +88,8 @@
        (send rs :put :sh-rleg-ref-force (send (send *log* :parser-list "sh_rfsensorOut") :read-state))
        (send rs :put :sh-larm-ref-force (send (send *log* :parser-list "sh_lhsensorOut") :read-state))
        (send rs :put :sh-rarm-ref-force (send (send *log* :parser-list "sh_rhsensorOut") :read-state))
+       (send rs :put :stabilizer-end-coords-list (send *log* :stabilizer-end-coords-list))
+       (send rs :put :imucoords (send *log* :imucoords))
        (setf (elt *rs-list* idx) rs)
        )
      (incf idx)
