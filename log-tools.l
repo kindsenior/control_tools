@@ -405,3 +405,45 @@
     (unless (and (boundp '*viewer*) *viewer*) (objects *robot*))
     fname-with-path
     ))
+
+(defun play-log (&key (step 10))
+  (let ((idx 0) (rs))
+    (unless (boundp '*ref-robot*)
+      (setq *ref-robot* (instance (class *robot*) :init))
+      (send-all (send-all (flatten (send-all (send *ref-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color (float-vector 0 0 1) 0.3)
+      (send-all (send-all (flatten (send-all (send *robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color (float-vector 1 0 0) 0.3)
+      (objects (list *robot* *ref-robot*)))
+
+    (send *robot* :reset-pose)
+    (send *robot* :fix-leg-to-coords (make-coords))
+    (send *robot* :reset-coords)
+    (send *ref-robot* :reset-coords)
+    (send *ref-robot* :reset-pose)
+    (send *ref-robot* :fix-leg-to-coords (make-coords))
+
+    (do-until-key-with-check
+     (progn (< idx (length *rs-list*)))
+     (setq rs (elt *rs-list* idx))
+     (setq contact-limbs (remove nil (mapcar #'(lambda (limb contact-state) (if (equal contact-state :support) limb)) '(:rleg :lleg :rarm :larm) (send rs :contact-state))))
+
+     ;; (send *robot* :angle-vector (send rs :angle-vector))
+     ;; (send *robot* :fix-leg-to-coords (send rs :root-coords))
+
+     (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
+     (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0
+     (send (send rs :get :auto-balancer-reference-root-coords) :draw-on :flush t)
+
+     (send *robot* :angle-vector (send rs :angle-vector))
+     (send *robot* :move-coords (send (send (send rs :get :imucoords) :inverse-transformation) :transform (make-coords :rpy (list (deg2rad 180) 0 0))) (car (send *robot* :links)))
+
+     ;; move robot for foot position adjusting
+     (send *robot* :translate (v- (send (send *ref-robot* :lleg :end-coords) :worldpos) (send (send *robot* :lleg :end-coords) :worldpos)) :world)
+
+
+     (send *irtviewer* :draw-objects :flush nil)
+     ;; (send *irtviewer* :draw-objects)
+     (x::window-main-one)
+     ;; (unix:usleep 1)
+     (incf idx step)
+     )
+  ))
