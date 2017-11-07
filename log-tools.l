@@ -387,7 +387,7 @@
     (setq rs-fname (concatenate string (reg-replace "[^\/]*$" "" fname-with-path) "rs-list.l"))
 
     (when (or (not (boundp '*log*)) create)
-      (warning-message 3 "create new *log* from ~a~%" fname-with-path)
+      (warning-message 3 "create new *log* from file:~a robot:~a~%" fname-with-path robot)
       (setq *log* (create-log-interface fname-with-path :robot robot)))
     
     (cond
@@ -397,7 +397,7 @@
      ( t
        (warning-message 3 "now converting *log* to robot-state list~%")
        (setq *rs-list* (create-rs-list :ri *log*))
-       (unix:system "beep; notify-send \"finised convering log file to robot state list\" -t 0")
+       (unix:system "beep; notify-send \"finised convering log file to robot state list\" -t 5; say parsed")
        (dump-loadable-structure rs-fname *rs-list*) )
      )
 
