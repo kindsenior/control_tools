@@ -406,8 +406,9 @@
 
     (send *robot* :fix-leg-to-coords (make-coords) leg-option)
     (send *robot* :move-centroid-on-foot leg-option '(:lleg :rleg))
-    (setq waist-coord (reduce #'(lambda (coord0 coord1) (make-coords :pos (scale 0.5 (v+ (send coord0 :worldpos) (send coord1 :worldpos)))))
-                             (send-all (send-all (send *robot* :legs :crotch-r) :child-link) :worldcoords)))
+    ;; (setq waist-coord (reduce #'(lambda (coord0 coord1) (make-coords :pos (scale 0.5 (v+ (send coord0 :worldpos) (send coord1 :worldpos)))))
+    ;;                          (send-all (send-all (send *robot* :legs :crotch-r) :child-link) :worldcoords)))
+    (setq waist-coord (send (car (send *robot* :links)) :worldcoords))
 
     (setq zmp (send *robot* :centroid))
     (setf (elt zmp 2) 0)
