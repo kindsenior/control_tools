@@ -107,7 +107,7 @@
     (setq date (reg-replace* " " "0" (format nil "20~2d_~2d-~2d_~2d-~2d_~2d" (- (elt raw-date 5) 100) (+ (elt raw-date 4) 1) (elt raw-date 3) (elt raw-date 2) (elt raw-date 1) (elt raw-date 0)  )) )
 
     (setq org-fname (format nil "~a_~a" org-fname date))
-    (send *ri* :save-log (format nil "/tmp/~a" org-fname) :set-robot-date-string nil)
+    (while (not (send (send *ri* :save-log (format nil "/tmp/~a" org-fname) :set-robot-date-string nil) :operation_return)) (warn "do :save-log"))
 
     (setq fname (read-line (piped-fork (format nil "zenity --entry --title \"ファイル名\" --text=\"ログファイルの保存名\" --entry-text=\"~s\"" fname)) nil eof))
     (if (eq eof fname)
