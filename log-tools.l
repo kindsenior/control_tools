@@ -406,8 +406,10 @@
     fname-with-path
     ))
 
-(defun play-log (&key (step 10))
-  (let ((idx 0) (rs))
+(defun play-log (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil))
+  (let ((idx) (rs) (start-idx) (stop-idx))
+    (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
+    (setq idx start-idx)
     (unless (boundp '*ref-robot*)
       (setq *ref-robot* (instance (class *robot*) :init))
       (send-all (send-all (flatten (send-all (send *ref-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color (float-vector 0 0 1) 0.3)
@@ -422,8 +424,8 @@
     (send *ref-robot* :fix-leg-to-coords (make-coords))
 
     (do-until-key-with-check
-     (progn (< idx (length *rs-list*)))
-     (setq rs (elt *rs-list* idx))
+     (progn (if (< idx stop-idx) t (if repeat (progn (setq idx start-idx) t) nil)))
+     (setq rs (elt rs-list idx))
      (setq contact-limbs (remove nil (mapcar #'(lambda (limb contact-state) (if (equal contact-state :support) limb)) '(:rleg :lleg :rarm :larm) (send rs :contact-state))))
 
      ;; (send *robot* :angle-vector (send rs :angle-vector))
