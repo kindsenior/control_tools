@@ -71,7 +71,7 @@
   )
 
 (defun is-choreonoid ()
-  (if (and (is-simulation) (ros::get-param "/multisense/range_bridge/frame_id" nil)) t nil))
+  (if (and (is-simulation) (substringp "choreonoid" (read-line (piped-fork "rtls localhost:15005/ -l |grep RobotHardware")))) t nil))
 
 ;; posファイルの関節数を修正する
 (defun modify-posfile (path fname)
