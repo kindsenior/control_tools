@@ -181,9 +181,10 @@
     )
 
   (send *robot* :angle-vector (send *ri* :state :potentio-vector))
-  (warn "now moving to set-current-pose by load-pattern~%")
+  (warn "now moving to set-current-pose by load-pattern in 2 sec~%")
   (when set-pose (set-current-pose :tm 2 :wait t))
 
+  (warn "set st-algorithm to ~s~%" st-algorithm)
   (send *ri* :set-st-param :st-algorithm st-algorithm)
   ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop)
   ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop2)
