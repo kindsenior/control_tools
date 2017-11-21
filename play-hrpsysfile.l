@@ -193,11 +193,14 @@
     (warn "disable emergency-check~%")
     (send *ri* :set-st-param :emergency-check-mode 0))
   (send *ri* :set-log-maxlength (* 500 25))
-  (when (and (or (not (is-simulation)) (is-choreonoid)) start-st)
-    (warn "start-st~%")
-    (send *ri* :start-st)
-    (unix:sleep 3))
-
+  (if start-st
+      (when (and (or (not (is-simulation)) (is-choreonoid)))
+        (warn "start-st~%")
+        (send *ri* :start-st)
+        (unix:sleep 3))
+    (progn
+      (warn "stop-st~%")
+      (send *ri* :stop-st)))
   )
 
 (defun get-motion-time (path fname)
