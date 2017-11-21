@@ -186,8 +186,6 @@
 
   (warn "set st-algorithm to ~s~%" st-algorithm)
   (send *ri* :set-st-param :st-algorithm st-algorithm)
-  ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop)
-  ;; (send *ri* :set-st-param :st-algorithm :eefmqpcop2)
   (send *ri* :set-st-param :eefm-ee-forcemoment-distribution-weight
         (list #f(0 0 1 1 1 0) #f(0 0 1 1 1 0) #f(0 0 0 0 0 0) #f(0 0 0 0 0 0)))
   (unless (= (send (send *ri* :get-st-param) :emergency_check_mode) 0)
@@ -248,7 +246,7 @@
     (save-log :add-fname add-fname))
   ))
 
-(defun play-hrpsysfile (&rest args &key fname (real nil) (save-log t) (tm 5) &allow-other-keys)
+(defun play-hrpsysfile (&rest args)
   (when (boundp '*ci*) (apply #'play-hrpsysfile-old args))
   (when (boundp '*ri*) (apply #'play-hrpsysfile-impl args))
   )
