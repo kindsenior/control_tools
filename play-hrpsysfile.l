@@ -104,7 +104,7 @@
 
 ;; 関節角速度ファイル作成
 ;; 自分のPCから実行
-(defun copy-files (&key (fname "SampleMotion") (ofname nil) (real nil) (plugin t) (sample-name "ShuffleSample") (remove-last-row t))
+(defun copy-files (&key (fname "SampleMotion") (ofname nil) (real t) (plugin t) (sample-name "ShuffleSample") (remove-last-row t))
   (let ( motionname
          zmpline velfile optfile posfile zmpfile path
          ;; (extention-list '("pos" "hip" "waist" "zmp" "vel" "optionaldata" "wrenches"))
@@ -206,7 +206,7 @@
   (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l"))));; dt=0.002 sec
   )
 
-(defun play-hrpsysfile-impl (&key fname (real nil) (tm 5) (save-log t) (plugin t) (sample-name "ShuffleSample") (use-init-file nil) (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (add-fname nil))
+(defun play-hrpsysfile-impl (&key fname (real t) (tm 5) (save-log t) (plugin t) (sample-name "ShuffleSample") (use-init-file nil) (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (add-fname nil))
   (let (path local-path motion-time)
    (if plugin
        (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
@@ -330,7 +330,7 @@
 ;;     ))
 
 ;; モーションの初期姿勢へ遷移 (hrpsysシーケンスファイルの1行目のみを実行)
-(defun init-pose (&key (fname "SampleMotion") (tm 10) (real nil) (plugin t) (sample-name "ShuffleSample") (wait nil))
+(defun init-pose (&key (fname "SampleMotion") (tm 10) (real t) (plugin t) (sample-name "ShuffleSample") (wait nil))
   (let* ( (motionname (car (reg-split "_"  fname))) (path) )
     (warn "(init-pose) now moving to initial pose of ~s's ~s in ~s sec~%" sample-name fname tm)
 
@@ -378,7 +378,7 @@
     (if wait (unix:sleep (round tm)))
     ))
 
-(defun init-landing-pose (&key (fname "SampleMotion") (tm 2000) (real nil) (plugin t) (sample-name "ShuffleSample"))
+(defun init-landing-pose (&key (fname "SampleMotion") (tm 2000) (real t) (plugin t) (sample-name "ShuffleSample"))
   (let* ( (motionname (car (reg-split "_"  fname))) (path) )
     (if plugin
       (setq path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
