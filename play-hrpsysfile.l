@@ -191,6 +191,12 @@
   (unless (= (send (send *ri* :get-st-param) :emergency_check_mode) 0)
     (warn "disable emergency-check~%")
     (send *ri* :set-st-param :emergency-check-mode 0))
+
+  ;; jump setting
+  (send *ri* :set-st-param :eefm-use-force-difference-control nil)
+  (send *ri* :set-st-param :detection-time-to-air 1.0)
+  ;; (send *ri* :set-st-param :emergency-check-mode 0)
+
   (send *ri* :set-log-maxlength (* 500 25))
   (if start-st
       (when (and (or (not (is-simulation)) (is-choreonoid)))
