@@ -166,7 +166,7 @@
     (when impedance (send *ci* :start-impedance :lleg))
   ))
 
-(defun prepare-experiment (&key (start-st t) (st-algorithm :eefmqpcop2) (set-pose t))
+(defun prepare-experiment (&key (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (delay-vec #f(0.055 0.055))
   (warn "(prepare-experiment)~%")
   (when (= (send (send *ri* :get-auto-balancer-param) :controller_mode) 1)
     (warn "stop-st~%")
@@ -196,6 +196,9 @@
   (send *ri* :set-st-param :eefm-use-force-difference-control nil)
   (send *ri* :set-st-param :detection-time-to-air 1.0)
   ;; (send *ri* :set-st-param :emergency-check-mode 0)
+
+  ;; (warn "set eefm-zmp-delay-time-const ~s~%" delay-vec)
+  ;; (send *ri* :set-st-param :eefm-zmp-delay-time-const delay-vec)
 
   (send *ri* :set-log-maxlength (* 500 25))
   (if start-st
