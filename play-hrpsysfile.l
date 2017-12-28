@@ -34,6 +34,9 @@
   (when (not (boundp '*hrp2*)) (setup-model-for-hrp2) (setq *robot* *hrp2*)  );; old hrpsys
   )
 
+(ros::roseus "play-hrpsysfile.l")
+(ros::load-ros-manifest "trans_ros_bridge")
+
 ;; (load "euslib/jsk/gnuplotlib.l")
 (load "log-tools.l")
 
@@ -72,6 +75,21 @@
 
 (defun is-choreonoid ()
   (if (and (is-simulation) (substringp "choreonoid" (read-line (piped-fork "rtls localhost:15005/ -l |grep RobotHardware")))) t nil))
+
+;; servo-state判定
+(defun get-servo-states (&key (print nil))
+  (ros::spin-once)
+
+  (let (servo-states)
+    (setq servo-states (coerce (send *servo-state-msg* :states) cons))
+    (when print (warning-message 3 "servo-states: ") (mapc #'(lambda (val) (warning-message 3 " 0x~0,4X" val)) servo-states) (warn "~%"))
+    servo-states
+    )
+  )
+
+(defun is-servo-off (&key (print nil))
+  (find t (mapcar #'(lambda (state) (not (zerop (logand state #X0800)))) (get-servo-states :print print)))
+  )
 
 ;; posファイルの関節数を修正する
 (defun modify-posfile (path fname)
@@ -569,3 +587,13 @@
     (unix:usleep (round (* 1e6 (+ tm 2.5))))
     )
   )
+
+(defun init-play-hrpsysfile()
+  (when (not (boundp '*servo-state-msg*))
+    (warning-message 2 "subscribe /shm_servo_state~%")
+    (ros::subscribe "/shm_servo_state"  trans_ros_bridge::ServoState #'(lambda (msg) (setq *servo-state-msg* msg)))
+    )
+  (warn "spin-once while not boundp servo-state-msg~%")
+  (while (not (boundp '*servo-state-msg*)) (ros::spin-once))
+  )
+(init-play-hrpsysfile)
