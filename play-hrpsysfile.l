@@ -127,6 +127,7 @@
        ( (equal (send *robot* :name) "HRP2JSKNTS") (setq uname "grxuser" machine-name "hrp2017c") )
        ( (equal (send *robot* :name) "JAXON")      (setq uname "leus"    machine-name "jaxon")    )
        ( (equal (send *robot* :name) "JAXON_RED")  (setq uname "leus"    machine-name "jaxonred") )
+       ( (equal (send *robot* :name) "JAXON_BLUE") (setq uname "leus"    machine-name "jaxonblue") )
        ( t (warning-message 1 "No Setting for The Robot~%") )
        )
       (unix:system (concatenate string "scp " path fname ".* " uname "@" machine-name ":/tmp"))
@@ -198,7 +199,7 @@
     (when impedance (send *ci* :start-impedance :lleg))
   ))
 
-(defun prepare-experiment (&key (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (delay-vec #f(0.055 0.055))
+(defun prepare-experiment (&key (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (delay-vec #f(0.055 0.055)))
   (warn "(prepare-experiment)~%")
   (when (= (send (send *ri* :get-auto-balancer-param) :controller_mode) 1)
     (warn "stop-st~%")
