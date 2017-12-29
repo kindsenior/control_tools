@@ -48,6 +48,11 @@
   (send *gp* :command "set size 1,1")
   )
 
+(defun get-date-string()
+  (let ((raw-date (unix:localtime)))
+    (reg-replace* " " "0" (format nil "20~2d_~2d-~2d_~2d-~2d_~2d" (- (elt raw-date 5) 100) (+ (elt raw-date 4) 1) (elt raw-date 3) (elt raw-date 2) (elt raw-date 1) (elt raw-date 0)  ))
+    ))
+
 (defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
   ;; デフォルトログファイル名
   (if (not fname)
@@ -103,8 +108,7 @@
   (let ( machine-name raw-date date path fstream uname (org-fname "test") (eof (gensym)) )
 
     ;; 日付追加
-    (setq raw-date (unix:localtime))
-    (setq date (reg-replace* " " "0" (format nil "20~2d_~2d-~2d_~2d-~2d_~2d" (- (elt raw-date 5) 100) (+ (elt raw-date 4) 1) (elt raw-date 3) (elt raw-date 2) (elt raw-date 1) (elt raw-date 0)  )) )
+    (setq date (get-date-string))
 
     (setq org-fname (format nil "~a_~a" org-fname date))
     (while (not (send (send *ri* :save-log (format nil "/tmp/~a" org-fname) :set-robot-date-string nil) :operation_return)) (warn "do :save-log"))
