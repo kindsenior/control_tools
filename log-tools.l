@@ -53,7 +53,27 @@
     (reg-replace* " " "0" (format nil "20~2d_~2d-~2d_~2d-~2d_~2d" (- (elt raw-date 5) 100) (+ (elt raw-date 4) 1) (elt raw-date 3) (elt raw-date 2) (elt raw-date 1) (elt raw-date 0)  ))
     ))
 
-(defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
+(defun save-shm-log (&key (fname nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log") (scp t))
+  (let (machine-name user-name date path)
+
+    (setq machine-name (get-control-machine-name) user-name (get-control-machine-user-name))
+    (unix:system (format nil "ssh ~a@~a sudo pkill -2 ecbridge_shm~%" user-name machine-name))
+
+    (when scp
+      (if (not fname)
+          (if (boundp '*__fname__*)
+              (setq fname *__fname__*)
+            (setq fname "test")))
+
+      (setq date (get-date-string)
+            fname (format nil "~a_~a_~a" fname (send *robot* :name) date)
+            path (format nil "/home/~a/~a/~a/~a" (unix:getenv "USER") log-dir (send *robot* :name) fname) )
+      (unix:system (format nil "mkdir -p ~a" path))
+
+      (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a/~a.log" user-name machine-name path fname)))
+    ))
+
+(defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (save-shm-log nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
   ;; デフォルトログファイル名
   (if (not fname)
       (if (boundp '*__fname__*)
@@ -68,7 +88,7 @@
 
   (cond
    ( (equal type :old) (save-log-old fname) )
-   ( (equal type :new) (setq fname (save-log-new fname parse-flg log-dir)) )
+   ( (equal type :new) (setq fname (save-log-new fname parse-flg log-dir save-shm-log)) )
    )
   fname
   )
@@ -104,7 +124,7 @@
     (send *ci* :start-log) ))
 
 ;; 新システム
-(defun save-log-new (fname parse-flg log-dir)
+(defun save-log-new (fname parse-flg log-dir save-shm-log)
   (let ( machine-name raw-date date path fstream uname (org-fname "test") (eof (gensym)) )
 
     ;; 日付追加
@@ -112,6 +132,9 @@
 
     (setq org-fname (format nil "~a_~a" org-fname date))
     (while (not (send (send *ri* :save-log (format nil "/tmp/~a" org-fname) :set-robot-date-string nil) :operation_return)) (warn "do :save-log"))
+
+    ;; save shm log (do not scp and copy at the same time with hrpsys log files)
+    (when (or save-shm-log (is-servo-off :print t)) (save-shm-log :log-dir log-dir :scp nil))
 
     (setq fname (read-line (piped-fork (format nil "zenity --entry --title \"ファイル名\" --text=\"ログファイルの保存名\" --entry-text=\"~s\"" fname)) nil eof))
     (if (eq eof fname)
@@ -150,6 +173,7 @@
             ( t (warning-message 1 "cannot use save-log in this robot~%") )
             )
            (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/" org-fname "* " path))
+           (when (or save-shm-log (is-servo-off)) (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/shm.log " path "/"org-fname ".log")))
            )
          )
         (unix:system (concatenate string "find " path "| rename 's/" org-fname "/" fname "/'"))

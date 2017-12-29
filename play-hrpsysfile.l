@@ -247,7 +247,8 @@
   (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l"))));; dt=0.002 sec
   )
 
-(defun play-hrpsysfile-impl (&key fname (real t) (tm 5) (save-log t) (plugin t) (sample-name "ShuffleSample") (use-init-file nil) (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (add-fname nil))
+(defun play-hrpsysfile-impl (&key fname (real t) (tm 5) (save-log t) (save-shm-log nil) (plugin t) (use-init-file nil) (start-st t) (set-pose t) (add-fname nil)
+                                  (sample-name "ShuffleSample") (st-algorithm :eefmqpcop2))
   (let (path local-path motion-time)
    (if plugin
        (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
