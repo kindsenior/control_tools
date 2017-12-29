@@ -66,6 +66,20 @@
 ;;   (if (boundp '*gplot*) (setq *gnuplot* *gplot*)  (setq *gnuplot* (gnuplot)))
 ;;   (send *gnuplot* :command "set size 1.5,1")(send *gnuplot* :command "set size 1,1"))
 
+(defun get-control-machine-name (&key (robot *robot*))
+  (string-downcase (reg-replace "_" "" (send *robot* :name)))
+  )
+
+(defun get-control-machine-user-name (&key (robot *robot*))
+  (let ((machine-name (get-control-machine-name :robot robot)) (user-name nil))
+    (cond
+     ((substringp "jaxon" machine-name) (setq user-name "leus"))
+     ((substringp "hrp" machine-name) (setq user-name "grxuser"))
+     (t (warn "~s is not supported robot~%"))
+     )
+    user-name
+    ))
+
 ;; 実機かシミュレーションか判定
 (defun is-simulation ()
   (if (ros::get-param "use_sim_time" nil);; シミュレーションフラグ
