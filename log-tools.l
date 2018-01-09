@@ -55,23 +55,23 @@
 
 (defun save-shm-log (&key (fname nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log") (scp t))
   (let (machine-name user-name date path)
+    (unless (is-simulation)
+      (setq machine-name (get-control-machine-name) user-name (get-control-machine-user-name))
+      (unix:system (format nil "ssh ~a@~a sudo pkill -2 ecbridge_shm~%" user-name machine-name))
 
-    (setq machine-name (get-control-machine-name) user-name (get-control-machine-user-name))
-    (unix:system (format nil "ssh ~a@~a sudo pkill -2 ecbridge_shm~%" user-name machine-name))
+      (when scp
+        (if (not fname)
+            (if (boundp '*__fname__*)
+                (setq fname *__fname__*)
+              (setq fname "test")))
 
-    (when scp
-      (if (not fname)
-          (if (boundp '*__fname__*)
-              (setq fname *__fname__*)
-            (setq fname "test")))
+        (setq date (get-date-string)
+              fname (format nil "~a_~a_~a" fname (send *robot* :name) date)
+              path (format nil "/home/~a/~a/~a/~a" (unix:getenv "USER") log-dir (send *robot* :name) fname) )
+        (unix:system (format nil "mkdir -p ~a" path))
 
-      (setq date (get-date-string)
-            fname (format nil "~a_~a_~a" fname (send *robot* :name) date)
-            path (format nil "/home/~a/~a/~a/~a" (unix:getenv "USER") log-dir (send *robot* :name) fname) )
-      (unix:system (format nil "mkdir -p ~a" path))
-
-      (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a/~a.log" user-name machine-name path fname)))
-    ))
+        (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a/~a.log" user-name machine-name path fname)))
+    )))
 
 (defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (save-shm-log nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
   ;; デフォルトログファイル名

@@ -102,7 +102,10 @@
   )
 
 (defun is-servo-off (&key (print nil))
-  (find t (mapcar #'(lambda (state) (not (zerop (logand state #X0800)))) (get-servo-states :print print)))
+  (if (is-simulation)
+      nil ;; always servo-on in simulation
+    (find t (mapcar #'(lambda (state) (not (zerop (logand state #X0800)))) (get-servo-states :print print)))
+    )
   )
 
 ;; posファイルの関節数を修正する
@@ -605,11 +608,13 @@
   )
 
 (defun init-play-hrpsysfile()
-  (when (not (boundp '*servo-state-msg*))
-    (warning-message 2 "subscribe /shm_servo_state~%")
-    (ros::subscribe "/shm_servo_state"  trans_ros_bridge::ServoState #'(lambda (msg) (setq *servo-state-msg* msg)))
+  (unless (is-simulation)
+    (when (not (boundp '*servo-state-msg*))
+      (warning-message 2 "subscribe /shm_servo_state~%")
+      (ros::subscribe "/shm_servo_state"  trans_ros_bridge::ServoState #'(lambda (msg) (setq *servo-state-msg* msg)))
+      )
+    (warn "spin-once while not boundp servo-state-msg~%")
+    (while (not (boundp '*servo-state-msg*)) (ros::spin-once))
     )
-  (warn "spin-once while not boundp servo-state-msg~%")
-  (while (not (boundp '*servo-state-msg*)) (ros::spin-once))
   )
 (init-play-hrpsysfile)
