@@ -177,7 +177,8 @@
            )
          )
         (unix:system (concatenate string "find " path "| rename 's/" org-fname "/" fname "/'"))
-        (unix:system (concatenate string "find " path "| rename 's/" (send *robot* :name) "\\(Robot\\)/RobotHardware/'" ))
+        (unix:system (concatenate string "find " path "| rename 's/" (send *robot* :name) "\\(Robot\\)/RobotHardware/'" ));; for old choreonoid log
+        (unix:system (concatenate string "find " path "| rename 's/RobotHardware_choreonoid0/RobotHardware0/'" ));; for choreonoid log
 
         ;; (sys:thread-no-wait #'plot-rs :fname fname :mode :force :save t :create t)
         (if parse-flg (sys:thread-no-wait #'prepare-plot :fname fname :create t))
