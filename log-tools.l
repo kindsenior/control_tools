@@ -478,3 +478,92 @@
      (incf idx step)
      )
   ))
+
+(defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz")))
+  (let ((idx) (rs) (start-idx) (stop-idx) (ref-cmz-list nil) (act-cmz-list nil) (tm-list) (fz) (fz-thresh 20) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list))
+    (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
+    (unless (boundp '*ref-robot*)
+      (setq *ref-robot* (instance (class *robot*) :init))
+      ;; (send-all (send-all (flatten (send-all (send *ref-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color (float-vector 0 0 1) 0.3)
+      ;; (send-all (send-all (flatten (send-all (send *robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color (float-vector 1 0 0) 0.3)
+      (objects (list *robot* *ref-robot*)))
+
+    (send *robot* :reset-pose)
+    (send *robot* :fix-leg-to-coords (make-coords))
+    (send *robot* :reset-coords)
+    (send *ref-robot* :reset-coords)
+    (send *ref-robot* :reset-pose)
+    (send *ref-robot* :fix-leg-to-coords (make-coords))
+
+    ;; seek jump phase
+    (setq idx start-idx)
+    (do-until-key-with-check
+     (progn (if (< idx stop-idx) t (if repeat (progn (setq idx start-idx) t) nil)))
+     (setq rs (elt rs-list idx))
+
+     (setq act-contact-state-list (mapcar #'(lambda (force) (> (elt force 2) fz-thresh)) (car (send rs :wrench-list))))
+     (setq act-contact-limbs (remove nil (mapcar #'(lambda (limb contact-state) (if contact-state limb)) '(:rleg :lleg :rarm :larm) act-contact-state-list)))
+     (if (find t act-contact-state-list)
+         (progn ;; supporting phase
+           (if (= (length act-contact-limbs) 1)
+               (setq prev-act-contact-coords (send *ref-robot* (car act-contact-limbs) :end-coords))
+             (setq prev-act-contact-coords (apply #'midcoords 0.5 (mapcar #'(lambda (limb) (send *robot* limb :end-coords)) act-contact-limbs))))
+           (send *robot* :angle-vector (send rs :angle-vector))
+           (send *robot* :fix-leg-to-coords prev-act-contact-coords (remove nil (mapcar #'(lambda (limb contact-state) (if contact-state limb)) '(:rleg :lleg :rarm :larm) act-contact-state-list)))
+           (when (and (not landing-idx) takeoff-idx) (setq landing-idx idx))
+           )
+       (progn ;; jumping phase
+         (when (not takeoff-idx) (setq takeoff-idx idx))
+         )
+       )
+     ;; (when (and (not (find t act-contact-state-list)) (not takeoff-idx))
+     ;;   (setq takeoff-idx idx)
+     ;;   )
+     ;; (when (and (find t act-contact-state-list) (not landing-idx) takeoff-idx)
+     ;;   (setq landing-idx idx))
+
+     (incf idx step)
+     )
+    (warn "takeoff: ~a  landing: ~a" takeoff-idx landing-idx)
+
+    (setq idx start-idx)
+    (do-until-key-with-check
+     (progn (if (< idx stop-idx) t (if repeat (progn (setq idx start-idx) t) nil)))
+     (setq rs (elt rs-list idx))
+     (push-back (send rs :time) tm-list)
+     ;; (setq contact-limbs (remove nil (mapcar #'(lambda (limb contact-state) (if (equal contact-state :support) limb)) '(:rleg :lleg :rarm :larm) (send rs :contact-state))))
+
+     ;; (send *robot* :angle-vector (send rs :angle-vector))
+     ;; (send *robot* :fix-leg-to-coords (send rs :root-coords))
+
+     (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
+     (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0
+     (push-back (elt (send *ref-robot* :centroid) 2) ref-cmz-list)
+     (send (send rs :get :auto-balancer-reference-root-coords) :draw-on :flush t)
+
+
+     ;; (send *robot* :angle-vector (send rs :angle-vector))
+     ;; (send *robot* :move-coords (send (send (send rs :get :imucoords) :inverse-transformation) :transform (make-coords :rpy (list (deg2rad 180) 0 0))) (car (send *robot* :links)))
+
+     ;; ;; move robot for foot position adjusting
+     ;; (send *robot* :translate (v- (send (send *ref-robot* :lleg :end-coords) :worldpos) (send (send *robot* :lleg :end-coords) :worldpos)) :world)
+
+
+     (send *irtviewer* :draw-objects :flush nil)
+     ;; (send *irtviewer* :draw-objects)
+     (x::window-main-one)
+     ;; (unix:usleep 1)
+     (incf idx step)
+     )
+
+    (graph-view
+     (list ref-cmz-list)
+     tm-list
+     :keylist (list "Reference CMz")
+     :title fname
+     :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
+     :dump-graph t
+     :xlabel "Time[s]"
+     :ylabel "CMz[mm]"
+     )
+  ))
