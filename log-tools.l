@@ -499,7 +499,7 @@
     ))
 
 (defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz"))
-                                 (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0))
+                                 (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0) (root-mode :real))
   (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil) (tm-list) (ref-cmz-list nil)
         (ref-r-fz-list nil) (ref-l-fz-list nil) (act-r-fz-list nil) (act-l-fz-list nil)
@@ -578,6 +578,13 @@
          (setq prev-act-contact-coords (get-contact-coords *robot* prev-act-contact-limbs))
          )
        )
+     ;; (cond
+     ;;  ((equal root-mode :ref2act) (send *ref-robot* :move-coords (send (car (send *robot* :links)) :worldcoords) (car (send *ref-robot* :links))))
+     ;;  ((equal root-mode :act2ref) (send *robot* :move-coords (send (car (send *ref-robot* :links)) :worldcoords) (car (send *robot* :links)))))
+     (cond
+      ((equal root-mode :ref2act) (send *ref-robot* :translate (v- (send (car (send *robot* :links)) :worldpos) (send (car (send *ref-robot* :links)) :worldpos)) :world))
+      ((equal root-mode :act2ref) (send *robot* :translate (v- (send (car (send *ref-robot* :links)) :worldpos) (send (car (send *robot* :links)) :worldpos)) :world)))
+
 
      (send (send rs :get :auto-balancer-reference-root-coords) :draw-on :flush t)
 
