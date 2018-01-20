@@ -551,7 +551,7 @@
            (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
            (when (and (not landing-idx) takeoff-idx)
              (setq landing-idx idx)
-             (warn "takeoff: ~a (~a[sec]) landing: ~a (~a[sec])~%" takeoff-idx (send (elt rs-list takeoff-idx) :time) landing-idx (send (elt rs-list landing-idx) :time))
+             (unless repeat (warn "takeoff: ~a (~a[sec]) landing: ~a (~a[sec])~%" takeoff-idx (send (elt rs-list takeoff-idx) :time) landing-idx (send (elt rs-list landing-idx) :time)))
              (setq takeoff-idx nil))
            ;; (warn "~a ~a ~a~%" (send rs :time) prev-act-contact-limbs (send prev-act-contact-coords :worldpos))
            (push-back (copy-object (send *robot* :centroid)) act-cm-list)
@@ -593,25 +593,26 @@
      (incf idx step)
      )
 
-    (let (ref-cmx-list ref-cmz-list act-cmx-list act-cmz-list)
-      (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
-            ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
-            ref-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) ref-dcm-list)
-            act-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) act-cm-list)
-            act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
-            act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) act-dcm-list))
+    (unless repeat
+      (let (ref-cmx-list ref-cmz-list act-cmx-list act-cmz-list)
+        (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
+              ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
+              ref-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) ref-dcm-list)
+              act-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) act-cm-list)
+              act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
+              act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) act-dcm-list))
 
-      (graph-view
-       ;; (list ref-cmz-list act-cmz-list)
-       (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list)
-       tm-list
-       :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz")
-       :title fname
-       :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
-       :dump-graph t
-       :xlabel "Time[s]"
-       :ylabel "CMz[mm]"
-       :mode mode
-       )
-      )
+        (graph-view
+         ;; (list ref-cmz-list act-cmz-list)
+         (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list)
+         tm-list
+         :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz")
+         :title fname
+         :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
+         :dump-graph t
+         :xlabel "Time[s]"
+         :ylabel "CMz[mm]"
+         :mode mode
+         )
+        ))
   ))
