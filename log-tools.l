@@ -547,7 +547,7 @@
      (if (and (> (length (setq act-contact-limbs (get-contact-limbs rs :fz-thresh fz-thresh))) 0) (> (length prev-act-contact-limbs) 0))
          (progn ;; supporting phase
            (send *robot* :angle-vector (send rs :angle-vector))
-           (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)))
+           (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)));; for setting orientation
            (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
            (when (and (not landing-idx) takeoff-idx)
              (setq landing-idx idx)
