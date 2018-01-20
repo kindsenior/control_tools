@@ -502,7 +502,7 @@
                                  (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0))
   (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil) (tm-list) (ref-cmz-list nil)
-        (act-r-fz-list nil) (act-l-fz-list nil)
+        (ref-r-fz-list nil) (ref-l-fz-list nil) (act-r-fz-list nil) (act-l-fz-list nil)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
     (unless (boundp '*ref-robot*)
@@ -599,6 +599,9 @@
      ;; ;; move robot for foot position adjusting
      ;; (send *robot* :translate (v- (send (send *ref-robot* :lleg :end-coords) :worldpos) (send (send *robot* :lleg :end-coords) :worldpos)) :world)
 
+
+     (push-back (elt (send rs :get :st-rleg-ref-force) 2) ref-r-fz-list)
+     (push-back (elt (send rs :get :st-lleg-ref-force) 2) ref-l-fz-list)
      (push-back (elt (send rs :get :rleg-off-force-vector) 2) act-r-fz-list)
      (push-back (elt (send rs :get :lleg-off-force-vector) 2) act-l-fz-list)
 
@@ -619,9 +622,9 @@
 
       (graph-view
        ;; (list ref-cmz-list act-cmz-list)
-       (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list act-r-fz-list act-l-fz-list)
+       (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list)
        tm-list
-       :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "rFz" "lFz")
+       :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz")
        :title fname
        :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
        :dump-graph t
