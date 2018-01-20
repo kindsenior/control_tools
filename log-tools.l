@@ -485,6 +485,19 @@
 (defun get-contact-limbs (rs &rest args &key &allow-other-keys)
   (remove nil (mapcar #'(lambda (limb contact-state) (if contact-state limb)) '(:rleg :lleg :rarm :larm) (apply #'get-contact-state-list rs args))))
 
+(defun get-contact-coords (robot contact-limbs)
+  (mapcar #'(lambda (limb) (send robot limb :end-coords :copy-worldcoords)) contact-limbs))
+
+(defun move-by-foot-step (robot prev-contact-coords prev-contact-limbs cur-cuntact-limbs)
+  (let* ((common-contact-limbs (intersection prev-contact-limbs cur-cuntact-limbs))
+         (common-contact-coords (mapcar #'(lambda (limb) (elt prev-contact-coords (position limb prev-contact-limbs))) common-contact-limbs))
+         (common-contact-tf (mapcar #'(lambda (limb prev-coord) (send prev-coord :transformation (send robot limb :end-coords) :world)) common-contact-limbs common-contact-coords)))
+    (cond
+     ((= (length common-contact-limbs) 1) (send robot :fix-leg-to-coords (car common-contact-coords) (car common-contact-limbs)))
+     (t (send robot :fix-leg-to-coords (apply #'midcoords 0.5 common-contact-coords) :both)))
+    ;; (send robot :translate (scale (/ 1.0 (length common-contact-tf)) (apply #'v+ #f(0 0 0) (mapcar #'(lambda (tf) (send tf :pos)) common-contact-tf))) :world);; use only pos
+    ))
+
 (defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz"))
                                  (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0))
   (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm)
@@ -511,7 +524,7 @@
 
     (setq last-cm (copy-object (send *robot* :centroid)))
     (setq prev-act-contact-limbs (get-contact-limbs (car rs-list) :fz-thresh fz-thresh))
-    (setq prev-act-contact-coords (make-coords))
+    (setq prev-act-contact-coords (list (make-coords) (make-coords)))
     ;; seek jump phase
     (setq idx start-idx)
     (do-until-key-with-check
@@ -521,9 +534,8 @@
      (if (and (> (length (setq act-contact-limbs (get-contact-limbs rs :fz-thresh fz-thresh))) 0) (> (length prev-act-contact-limbs) 0))
          (progn ;; supporting phase
            (send *robot* :angle-vector (send rs :angle-vector))
-           (if (= (length prev-act-contact-limbs) 1)
-               (send *robot* :fix-leg-to-coords prev-act-contact-coords (car prev-act-contact-limbs))
-             (send *robot* :fix-leg-to-coords prev-act-contact-coords :both))
+           (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)))
+           (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
            (when (and (not landing-idx) takeoff-idx)
              (setq landing-idx idx)
              (warn "takeoff: ~a (~a[sec]) landing: ~a (~a[sec])~%" takeoff-idx (send (elt rs-list takeoff-idx) :time) landing-idx (send (elt rs-list landing-idx) :time))
@@ -535,9 +547,7 @@
            (setq last-dcm (car (last act-dcm-list)))
 
            (setq prev-act-contact-limbs act-contact-limbs)
-           (if (= (length prev-act-contact-limbs) 1)
-               (setq prev-act-contact-coords (send *robot* (car prev-act-contact-limbs) :end-coords :copy-worldcoords))
-             (setq prev-act-contact-coords (apply #'midcoords 0.5 (mapcar #'(lambda (limb) (send *robot* limb :end-coords)) prev-act-contact-limbs))))
+           (setq prev-act-contact-coords (get-contact-coords *robot* prev-act-contact-limbs))
            )
        (progn ;; jump phase and just after jump phase
          (when (not takeoff-idx) (setq takeoff-idx idx landing-idx nil))
@@ -545,17 +555,14 @@
          (push-back (v+ last-dcm (scale time-step g-vec)) act-dcm-list)
 
          (send *robot* :angle-vector (send rs :angle-vector))
+         (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)))
          (send *robot* :translate (v- (car (last act-cm-list)) (send *robot* :centroid)) :world)
 
          (setq last-cm (car (last act-cm-list)))
          (setq last-dcm (car (last act-dcm-list)))
 
          (setq prev-act-contact-limbs (get-contact-limbs rs :fz-thresh fz-thresh))
-         (cond
-          ((= (length prev-act-contact-limbs) 0) (setq prev-act-contact-coords nil));; jump
-          ((= (length prev-act-contact-limbs) 1) (setq prev-act-contact-coords (send *robot* (car prev-act-contact-limbs) :end-coords)));; single support
-          (t (setq prev-act-contact-coords (apply #'midcoords 0.5 (mapcar #'(lambda (limb) (send *robot* limb :end-coords)) prev-act-contact-limbs))));; double support
-          )
+         (setq prev-act-contact-coords (get-contact-coords *robot* prev-act-contact-limbs))
          )
        )
 
