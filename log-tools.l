@@ -511,25 +511,38 @@
       (send-all (send-all (flatten (send-all (send *robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color (float-vector 1 0 0) 0.3)
       (objects (list *robot* *ref-robot*)))
 
-    ;; (send *robot* :reset-pose)
-    (send *robot* :angle-vector (send (elt rs-list start-idx) :angle-vector))
-    (send *robot* :fix-leg-to-coords (make-coords))
-    ;; (send *robot* :reset-coords)
-    (send *ref-robot* :reset-coords)
-    ;; (send *ref-robot* :reset-pose)
-    (send *ref-robot* :angle-vector (send (elt rs-list start-idx) :get :auto-balancer-reference-vector))
-    (send *ref-robot* :fix-leg-to-coords (make-coords))
-
-    (setq ref-last-cm (copy-object (send *ref-robot* :centroid)))
-
-    (setq last-cm (copy-object (send *robot* :centroid)))
-    (setq prev-act-contact-limbs (get-contact-limbs (car rs-list) :fz-thresh fz-thresh))
-    (setq prev-act-contact-coords (list (make-coords) (make-coords)))
-    ;; seek jump phase
     (setq idx start-idx)
     (do-until-key-with-check
      (progn (if (< idx stop-idx) t (if repeat (progn (setq idx start-idx) t) nil)))
      (setq rs (elt rs-list idx))
+     (push-back (send rs :time) tm-list)
+
+     (when (= idx start-idx);; initial procedure
+       (send *robot* :angle-vector (send rs :angle-vector))
+       (send *robot* :fix-leg-to-coords (make-coords))
+       ;; (send *robot* :reset-coords)
+       (send *ref-robot* :reset-coords)
+       (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
+       (send *ref-robot* :fix-leg-to-coords (make-coords))
+       (setq abc-offset-tf (send (send rs :get :auto-balancer-reference-root-coords) :transformation (send (car (send *ref-robot* :links)) :worldcoords)))
+
+       (setq ref-last-cm (copy-object (send *ref-robot* :centroid)))
+
+       (setq last-cm (copy-object (send *robot* :centroid)))
+       (setq prev-act-contact-limbs (get-contact-limbs (car rs-list) :fz-thresh fz-thresh))
+       (setq prev-act-contact-coords (list (make-coords) (make-coords)))
+
+       (setq ref-dcm-list nil act-dcm-list nil ref-cm-list nil act-cm-list nil
+             ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil)
+       )
+
+     (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
+     ;; (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0
+     (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
+     (push-back (copy-object (send *ref-robot* :centroid)) ref-cm-list)
+     (push-back (scale (/ 1.0 time-step) (v- (car (last ref-cm-list)) ref-last-cm)) ref-dcm-list)
+     (setq ref-last-cm (car (last ref-cm-list)))
+
 
      (if (and (> (length (setq act-contact-limbs (get-contact-limbs rs :fz-thresh fz-thresh))) 0) (> (length prev-act-contact-limbs) 0))
          (progn ;; supporting phase
@@ -566,39 +579,7 @@
          )
        )
 
-     ;; (send *irtviewer* :draw-objects :flush nil)
-     (send *irtviewer* :draw-objects :flush t)
-     ;; (send *irtviewer* :draw-objects)
-     (x::window-main-one)
-     (unix:usleep sleep-time)
-     (incf idx step)
-     )
-
-    (setq idx start-idx)
-    (do-until-key-with-check
-     (progn (if (< idx stop-idx) t (if repeat (progn (setq idx start-idx) t) nil)))
-     (setq rs (elt rs-list idx))
-     (push-back (send rs :time) tm-list)
-     ;; (setq contact-limbs (remove nil (mapcar #'(lambda (limb contact-state) (if (equal contact-state :support) limb)) '(:rleg :lleg :rarm :larm) (send rs :contact-state))))
-
-     ;; (send *robot* :angle-vector (send rs :angle-vector))
-     ;; (send *robot* :fix-leg-to-coords (send rs :root-coords))
-
-     (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
-     (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0
-     (push-back (copy-object (send *ref-robot* :centroid)) ref-cm-list)
-     (push-back (scale (/ 1.0 time-step) (v- (car (last ref-cm-list)) ref-last-cm)) ref-dcm-list)
-     (setq ref-last-cm (car (last ref-cm-list)))
-
      (send (send rs :get :auto-balancer-reference-root-coords) :draw-on :flush t)
-
-
-     ;; (send *robot* :angle-vector (send rs :angle-vector))
-     ;; (send *robot* :move-coords (send (send (send rs :get :imucoords) :inverse-transformation) :transform (make-coords :rpy (list (deg2rad 180) 0 0))) (car (send *robot* :links)))
-
-     ;; ;; move robot for foot position adjusting
-     ;; (send *robot* :translate (v- (send (send *ref-robot* :lleg :end-coords) :worldpos) (send (send *robot* :lleg :end-coords) :worldpos)) :world)
-
 
      (push-back (elt (send rs :get :st-rleg-ref-force) 2) ref-r-fz-list)
      (push-back (elt (send rs :get :st-lleg-ref-force) 2) ref-l-fz-list)
@@ -608,7 +589,7 @@
      (send *irtviewer* :draw-objects :flush nil)
      ;; (send *irtviewer* :draw-objects)
      (x::window-main-one)
-     ;; (unix:usleep 1)
+     (unix:usleep sleep-time)
      (incf idx step)
      )
 
