@@ -549,7 +549,8 @@
 
      (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
      ;; (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0
-     (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
+     ;; (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
+     (send *ref-robot* :move-coords (send (send (send rs :get :auto-balancer-reference-root-coords) :copy-worldcoords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
      (push-back (copy-object (send *ref-robot* :centroid)) ref-cm-list)
      (push-back (scale (/ 1.0 time-step) (v- (car (last ref-cm-list)) ref-last-cm)) ref-dcm-list)
      (setq ref-last-cm (car (last ref-cm-list)))
