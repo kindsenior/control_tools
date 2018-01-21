@@ -510,7 +510,7 @@
                                  (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0) (root-mode :real))
   (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil) (tm-list) (ref-cmz-list nil)
-        (ref-r-fz-list nil) (ref-l-fz-list nil) (act-r-fz-list nil) (act-l-fz-list nil)
+        (ref-r-fz-list nil) (ref-l-fz-list nil) (act-r-fz-list nil) (act-l-fz-list nil) (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
         (ref-color #f(0 0 1)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
@@ -542,7 +542,9 @@
        (setq prev-act-contact-coords (list (make-coords) (make-coords)))
 
        (setq ref-dcm-list nil act-dcm-list nil ref-cm-list nil act-cm-list nil
-             ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil)
+             ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil
+             ref-lfoot-pos-list nil act-lfoot-pos-list nil
+             act-root-accel-list nil)
        )
 
      (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
@@ -587,6 +589,10 @@
          (setq prev-act-contact-coords (get-contact-coords *robot* prev-act-contact-limbs))
          )
        )
+
+     (push-back (send (send *ref-robot* :lleg :end-coords :copy-worldcoords) :worldpos) ref-lfoot-pos-list)
+     (push-back (send (send *robot*     :lleg :end-coords :copy-worldcoords) :worldpos) act-lfoot-pos-list)
+
      ;; (cond
      ;;  ((equal root-mode :ref2act) (send *ref-robot* :move-coords (send (car (send *robot* :links)) :worldcoords) (car (send *ref-robot* :links))))
      ;;  ((equal root-mode :act2ref) (send *robot* :move-coords (send (car (send *ref-robot* :links)) :worldcoords) (car (send *robot* :links)))))
@@ -604,6 +610,8 @@
      (push-back (elt (send rs :get :rleg-off-force-vector) 2) act-r-fz-list)
      (push-back (elt (send rs :get :lleg-off-force-vector) 2) act-l-fz-list)
 
+     (push-back (transform (send (send *robot* :gsensor) :worldrot) (send (car (last *rs-list*)) :get :accel-vector)) act-root-accel-list)
+
      (send *irtviewer* :draw-objects :flush nil)
      ;; (send *irtviewer* :draw-objects)
      (x::window-main-one)
@@ -612,19 +620,25 @@
      )
 
     (unless repeat
-      (let (ref-cmx-list ref-cmz-list act-cmx-list act-cmz-list)
+      (let (ref-cmx-list ref-cmz-list ref-dcmz-list act-cmx-list act-cmz-list act-dcmz-list act-root-accel-z-list)
+        (send *gp* :command "set ytics 100")
         (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
               ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
               ref-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) ref-dcm-list)
+              ref-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) 5)) ref-lfoot-pos-list)
               act-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) act-cm-list)
               act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
-              act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) act-dcm-list))
+              act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) act-dcm-list)
+              act-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) 5)) act-lfoot-pos-list)
+              act-root-accel-z-list (mapcar #'(lambda (accel) (* (elt accel 2) 100)) act-root-accel-list))
 
         (graph-view
          ;; (list ref-cmz-list act-cmz-list)
-         (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list)
+         (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list
+               ref-lfoot-z-list act-lfoot-z-list act-root-accel-z-list)
          tm-list
-         :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz")
+         :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz"
+                        "Reference lz" "Actual lz" "Actual root accel z")
          :title fname
          :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
          :dump-graph t
