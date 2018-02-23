@@ -507,18 +507,27 @@
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) contact-limbs) :get-val 'geometry::bodies)) :glvertices) :set-color color contact-opacity))
 
 (defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz"))
-                                 (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0) (root-mode :real))
+                                 (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act))
   (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil) (tm-list) (ref-cmz-list nil)
         (ref-r-fz-list nil) (ref-l-fz-list nil) (act-r-fz-list nil) (act-l-fz-list nil) (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
-        (ref-color #f(0 0 1)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
+        (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
     (unless (boundp '*ref-robot*)
       (setq *ref-robot* (instance (class *robot*) :init))
       (send-all (send-all (flatten (send-all (send *ref-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color ref-color 0.3)
       (send-all (send-all (flatten (send-all (send *robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color act-color 0.3)
-      (objects (list *robot* *ref-robot*)))
+      ;; (objects (list *robot* *ref-robot*))
+      )
+    (unless (boundp '*com-robot*)
+      (setq *com-robot* (instance (class *robot*) :init))
+      (send-all (send-all (flatten (send-all (send *com-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color com-color 0.3))
+    (cond
+     ((equal model-mode :ref-act) (objects (list *ref-robot* *robot*)))
+     ((equal model-mode :com-act) (objects (list *com-robot* *robot*)))
+     ((equal model-mode :ref-com) (objects (list *com-robot* *ref-robot*)))
+     ((equal model-mode :all)     (objects (list *com-robot* *ref-robot* *robot*))))
 
     (setq idx start-idx)
     (do-until-key-with-check
@@ -536,6 +545,8 @@
        ;; (setq abc-offset-tf (send (send rs :get :auto-balancer-reference-root-coords) :transformation (send (car (send *ref-robot* :links)) :worldcoords)))
        (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links)))
        (setq abc-offset-tf (send (apply #'midcoords 0.5 (send *ref-robot* :legs :end-coords)) :inverse-transformation))
+       (send *com-robot* :angle-vector (send rs :reference-angle-vector))
+       (send *com-robot* :fix-leg-to-coords (make-coords))
 
        (setq ref-last-cm (copy-object (send *ref-robot* :centroid)))
 
@@ -564,6 +575,9 @@
            (send *robot* :angle-vector (send rs :angle-vector))
            (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)));; for setting orientation
            (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
+           (send *com-robot* :angle-vector (send rs :reference-angle-vector))
+           (send *com-robot* :move-coords (make-coords :rpy (map float-vector #'deg2rad (send (elt *rs-list* 1000) :get :stabilizer-current-base-rpy))) (car (send *com-robot* :links)))
+           (move-by-foot-step *com-robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
            (when (and (not landing-idx) takeoff-idx)
              (setq landing-idx idx)
              (unless repeat (warn "takeoff: ~a (~a[sec]) landing: ~a (~a[sec])~%" takeoff-idx (send (elt rs-list takeoff-idx) :time) landing-idx (send (elt rs-list landing-idx) :time)))
@@ -585,6 +599,9 @@
          (send *robot* :angle-vector (send rs :angle-vector))
          (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)))
          (send *robot* :translate (v- (car (last act-cm-list)) (send *robot* :centroid)) :world)
+         (send *com-robot* :angle-vector (send rs :reference-angle-vector))
+         (send *com-robot* :move-coords (make-coords :rpy (map float-vector #'deg2rad (send (elt *rs-list* 1000) :get :stabilizer-current-base-rpy))) (car (send *com-robot* :links)))
+         (send *com-robot* :translate (v- (car (last act-cm-list)) (send *com-robot* :centroid)) :world)
 
          (setq last-cm (car (last act-cm-list)))
          (setq last-dcm (car (last act-dcm-list)))
