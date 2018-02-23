@@ -530,10 +530,12 @@
        (send *robot* :angle-vector (send rs :angle-vector))
        (send *robot* :fix-leg-to-coords (make-coords))
        ;; (send *robot* :reset-coords)
-       (send *ref-robot* :reset-coords)
+       ;; (send *ref-robot* :reset-coords)
        (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
-       (send *ref-robot* :fix-leg-to-coords (make-coords))
-       (setq abc-offset-tf (send (send rs :get :auto-balancer-reference-root-coords) :transformation (send (car (send *ref-robot* :links)) :worldcoords)))
+       ;; (send *ref-robot* :fix-leg-to-coords (make-coords))
+       ;; (setq abc-offset-tf (send (send rs :get :auto-balancer-reference-root-coords) :transformation (send (car (send *ref-robot* :links)) :worldcoords)))
+       (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links)))
+       (setq abc-offset-tf (send (apply #'midcoords 0.5 (send *ref-robot* :legs :end-coords)) :inverse-transformation))
 
        (setq ref-last-cm (copy-object (send *ref-robot* :centroid)))
 
@@ -548,9 +550,10 @@
        )
 
      (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
-     ;; (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0
+     (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0 during go-pos
+     (send *ref-robot* :transform abc-offset-tf :world)
      ;; (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
-     (send *ref-robot* :move-coords (send (send (send rs :get :auto-balancer-reference-root-coords) :copy-worldcoords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
+     ;; (send *ref-robot* :move-coords (send (send (send rs :get :auto-balancer-reference-root-coords) :copy-worldcoords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
      (push-back (copy-object (send *ref-robot* :centroid)) ref-cm-list)
      (push-back (scale (/ 1.0 time-step) (v- (car (last ref-cm-list)) ref-last-cm)) ref-dcm-list)
      (setq ref-last-cm (car (last ref-cm-list)))
