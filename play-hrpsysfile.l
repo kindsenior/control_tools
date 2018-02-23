@@ -220,8 +220,11 @@
   (warn "now moving to set-current-pose by load-pattern in 2 sec~%")
   (when set-pose (set-current-pose :tm 2 :wait t))
 
-  (warn "set st-algorithm to ~s~%" st-algorithm)
-  (send *ri* :set-st-param :st-algorithm st-algorithm)
+  (unless (eq (send *ri* :get-st-algorithm) st-algorithm)
+    (warn "stop-st for change st-algorithm~%")
+    (send *ri* :stop-st)
+    (warn "set st-algorithm to ~s~%" st-algorithm)
+    (send *ri* :set-st-param :st-algorithm st-algorithm))
   (send *ri* :set-st-param :eefm-ee-forcemoment-distribution-weight
         (list #f(0 0 1 1 1 0) #f(0 0 1 1 1 0) #f(0 0 0 0 0 0) #f(0 0 0 0 0 0)))
   (unless (= (send (send *ri* :get-st-param) :emergency_check_mode) 0)
