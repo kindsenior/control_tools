@@ -275,24 +275,31 @@
         )
     (init-pose :fname *__fname__* :sample-name sample-name :real t :wait t :tm tm));; tm sec
 
-  (warning-message 3 "Push Enter to start~%")
-  (do-until-key)
-  (when save-log
-    (warn "start-log~%")
-    (send *ri* :start-log))
-  (when real
-    (warn "load-pattern~%")
-    (setq path "/tmp/")
-    (send *ri* :load-pattern (concatenate string path fname) 1) );; default 1sec in load-pattern?
-  (setq sleep-time 1)
-  (warn "sleep ~a[sec] before initial pose~%" sleep-time);; 1sec
-  (unix:sleep sleep-time)
+  ;; (warning-message 3 "Push Enter to start~%")
+  ;; (do-until-key)
+  (if (or (= (send *ri* :state :emergency-mode) 0) (not (send *ri* :state :emergency-mode)));; emergency-mode-off or st-off
+      (progn
+        (warning-message 3 "Push y to start or n to resign~%")
+        (when (y-or-n-p)
+          (when save-log
+            (warn "start-log~%")
+            (send *ri* :start-log))
+          (when real
+            (warn "load-pattern~%")
+            (setq path "/tmp/")
+            (send *ri* :load-pattern (concatenate string path fname) 1) );; default 1sec in load-pattern?
+          (setq sleep-time 1)
+          (warn "sleep ~a[sec] before initial pose~%" sleep-time);; 1sec
+          (unix:sleep sleep-time)
 
-  (setq sleep-time (round (+ 2 motion-time)))
-  (when save-log
-    (warn "sleep ~a[sec] during motion~%" sleep-time)
-    (unix:sleep sleep-time)
-    (save-log :add-fname add-fname))
+          (setq sleep-time (round (+ 2 motion-time)))
+          (when save-log
+            (warn "sleep ~a[sec] during motion~%" sleep-time)
+            (unix:sleep sleep-time)
+            (save-log :add-fname add-fname))
+          ))
+    (warning-message 1 "Please release emergency~%")
+    )
   ))
 
 (defun play-hrpsysfile (&rest args)
