@@ -463,7 +463,7 @@
           (optionalfile (format nil "~a.optionaldata" fname-with-path)) of )
 
     (send *robot* :fix-leg-to-coords (make-coords) leg-option)
-    (send *robot* :move-centroid-on-foot leg-option '(:lleg :rleg))
+    (send *robot* :move-centroid-on-foot leg-option '(:lleg :rleg) :target-centroid-pos zmp-offset)
     ;; (setq waist-coord (reduce #'(lambda (coord0 coord1) (make-coords :pos (scale 0.5 (v+ (send coord0 :worldpos) (send coord1 :worldpos)))))
     ;;                          (send-all (send-all (send *robot* :legs :crotch-r) :child-link) :worldcoords)))
     (setq waist-coord (send (car (send *robot* :links)) :worldcoords))
