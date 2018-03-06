@@ -202,7 +202,7 @@
     (when impedance (send *ci* :start-impedance :lleg))
   ))
 
-(defun prepare-experiment (&key (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (delay-vec #f(0.055 0.055)))
+(defun prepare-experiment (&key (start-st t) (st-algorithm :eefmqpcop2) (set-pose t) (delay-vec #f(0.055 0.055)) (zmp-offset #f(0 0 0)))
   (warn "(prepare-experiment)~%")
   (when (= (send (send *ri* :get-auto-balancer-param) :controller_mode) 1)
     (warn "stop-st~%")
@@ -217,8 +217,7 @@
     )
 
   (send *robot* :angle-vector (send *ri* :state :potentio-vector))
-  (warn "now moving to set-current-pose by load-pattern in 2 sec~%")
-  (when set-pose (set-current-pose :tm 2 :wait t))
+  (when set-pose (set-current-pose :tm 2 :wait t :zmp-offset zmp-offset))
 
   (unless (eq (send *ri* :get-st-algorithm) st-algorithm)
     (warn "stop-st for change st-algorithm~%")
@@ -254,7 +253,11 @@
   (* 0.002 (read (piped-fork (concatenate string "cat " path fname ".pos" " | wc -l"))));; dt=0.002 sec
   )
 
-(defun play-hrpsysfile-impl (&key fname (real t) (tm 5) (save-log t) (save-shm-log nil) (plugin t) (use-init-file nil) (start-st t) (set-pose t) (add-fname nil)
+(defun calc-default-zmp-offset ()
+  (let ( (support-vertices (send (send *robot* :support-polygon '(:lleg :rleg)) :vertices)) )
+    (float-vector (* 0.5 (+ (apply #'min (mapcar #'(lambda (x) (elt x 0)) support-vertices)) (apply #'max (mapcar #'(lambda (x) (elt x 0)) support-vertices)))) 0 0)))
+
+(defun play-hrpsysfile-impl (&key fname (real t) (tm 5) (save-log t) (save-shm-log nil) (plugin t) (use-init-file nil) (start-st t) (set-pose t) (add-fname nil) (zmp-offset nil)
                                   (sample-name "ShuffleSample") (st-algorithm :eefmqpcop2))
   (let (path local-path motion-time)
    (if plugin
@@ -264,7 +267,9 @@
   (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
   (setq motion-time (get-motion-time local-path *__fname__*))
 
-  (prepare-experiment :start-st start-st :set-pose set-pose :st-algorithm st-algorithm)
+  (unless zmp-offset (setq zmp-offset (calc-default-zmp-offset)))
+
+  (prepare-experiment :start-st start-st :set-pose set-pose :st-algorithm st-algorithm :zmp-offset zmp-offset)
   (if use-init-file
       (let ((__init-fname__ (concatenate string *__fname__* "-init"));; fname-init
             (init-fname (concatenate string fname "-init")));; _fname-init
@@ -462,6 +467,9 @@
           (wrenchfile   (format nil "~a.wrenches"     fname-with-path)) wf
           (optionalfile (format nil "~a.optionaldata" fname-with-path)) of )
 
+    (warn "set-current-pose :zmp-offset ~a~%" zmp-offset)
+    (warn "now moving to current pose by load-pattern in ~a sec~%" tm)
+
     (send *robot* :fix-leg-to-coords (make-coords) leg-option)
     (send *robot* :move-centroid-on-foot leg-option '(:lleg :rleg) :target-centroid-pos zmp-offset)
     ;; (setq waist-coord (reduce #'(lambda (coord0 coord1) (make-coords :pos (scale 0.5 (v+ (send coord0 :worldpos) (send coord1 :worldpos)))))
@@ -535,11 +543,12 @@
     (if wait (unix:sleep (round tm)))
     ))
 
-(defun reset-pose (&rest args &key &allow-other-keys)
+(defun reset-pose (&rest args &key (zmp-offset nil) &allow-other-keys)
   (send *robot* :reset-pose)
   ;; (send *robot* :move-centroid-on-foot :both '(:lleg :rleg))
-  (send *robot* :legs :move-end-pos #f(-70 0 0))
-  (apply #'set-current-pose args))
+  (send *robot* :fix-leg-to-coords (make-coords))
+  (unless zmp-offset (setq zmp-offset (calc-default-zmp-offset)))
+  (apply #'set-current-pose (append args (list :zmp-offset zmp-offset))))
 
 (defun set-gain ( &optional (gain-ratio 1.0) )
   (setq vec (fill (instantiate float-vector (send *hrp2* :dof)) 1.0))
