@@ -66,6 +66,14 @@
   *rs-list*
   )
 
+(defun byte-convert (val &key from to)
+  (let ((str (make-string 4)))
+    (sys::poke val str 0 from)
+    (sys::peek str 0 to)
+  ))
+
+(defun convert-to-servo-alarm (val) (ash (logand #x0007fff8 val) -3))
+
 ;; デフォルトではない値を*rs-list*に追加
 (defun add-data-to-rs-list ()
   (let* ((ret) (init-tm) (idx 0)
