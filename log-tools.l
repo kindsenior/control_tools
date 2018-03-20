@@ -670,40 +670,49 @@
         ))
   ))
 
-(defun plot-voltage-drop (&key (step 10) (rs-list *rs-list*) (dt 0.002) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (fname "voltage-drop") (add-fname nil) (save nil) (mode "lines") (rotation-const 466))
-  (let* ( (start-idx) (stop-idx) (servo-state-list) (error-list nil) (prev-av) (idx 0) (tm-list nil)
+(defun plot-voltage-drop (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange '(0 60))
+                               (fname "voltage-drop") (add-fname nil) (save nil) (mode "lines")
+                                (dt 0.002) (rotation-const 466))
+  (let* ( (start-idx) (stop-idx) (servo-state-list) (error-list nil) (prev-av) (idx) (tm-list nil) (urata-len 17)
          (joint-name-list (send-all (send *robot* :joint-list) :name))
          (plot-joint-name-list (send-all (flatten (send *robot* :legs :joint-list)) :name))
-         (servo-state-key-list '(:dummy :motor-core-temp :motor-output :board-vin :ref-angle :enc-angle :abs-angle :enc-abs-diff :motor-outer-temp :ref-angle-shm :board-vdd :pgain :dgain :current :comm-normal :error0 :error1))
-         (parse-key-list '(:board-vin :current :error0)) (plot-key-list (append parse-key-list '(:dq :voltage-drop)))
-         (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 332.14 233.75 252 275 241.071))) (make-list 19 :initial-element 1))) )
+         (servo-state-key-list '(:dummy-alarm :motor-core-temp :motor-output :board-vin :ref-angle :enc-angle :abs-angle :enc-abs-diff :motor-outer-temp :ref-angle-shm
+                                        :board-vdd :pgain :dgain :current :comm-normal :error0 :error1))
+         (parse-key-list '(:board-vin :current)) (data-key-list (append parse-key-list '(:dq :voltage-drop :servo-alarm)))
+         (plot-key-list '(:voltage-drop :board-vin :servo-alarm))
+         (plot-key-name-list '("Voltage drop" "Vin" "error"))
+         (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 255.49 208.71 196.88 203.70 2202.58))) (make-list 19 :initial-element 1)))
+         ;; (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 332.14 233.75 252 275 241.071))) (make-list 19 :initial-element 1)))
+         )
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
+    (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
     (setq rotation-const (* rotation-const 360.0 (/ 1.0 60)))
     (setq prev-av (send (elt rs-list start-idx) :angle-vector))
 
-    (setq plot-data-list (mapcar #'(lambda (x) (make-list (length (send *robot* :angle-vector)))) plot-key-list))
+    (setq idx start-idx
+          data-list (mapcar #'(lambda (x) (make-list (length (send *robot* :angle-vector)))) data-key-list))
 
     (do-until-key-with-check
      (< idx stop-idx)
-     ;; (progn (if (< idx stop-idx) t (if repeat (progn (setq idx start-idx) t) nil)))
 
      (setq rs (elt rs-list idx))
      (push-back (send rs :time) tm-list)
 
      (setq servo-state-list (send rs :get :servo-state))
-     (mapc #'(lambda (idx dq gear-ratio)
-               (setq servo-state (subseq  servo-state-list (* idx urata-len) (* (1+ idx) urata-len)))
+     (mapc #'(lambda (joint-idx dq servo-alarm gear-ratio)
+               (setq servo-state (subseq  servo-state-list (* joint-idx urata-len) (* (1+ joint-idx) urata-len)))
                (mapc #'(lambda (key)
-                         (setq state-key-idx (position key servo-state-key-list)
-                               plot-key-idx (position key plot-key-list))
-                         (push-back (elt servo-state state-key-idx) (elt (elt plot-data-list plot-key-idx) idx)))
+                         (let ( (state-key-idx (position key servo-state-key-list)) (data-key-idx (position key data-key-list)) )
+                           (push-back (elt servo-state state-key-idx) (elt (elt data-list data-key-idx) joint-idx)) ))
                      parse-key-list)
-               (push-back dq (elt (elt plot-data-list (position :dq plot-key-list)) idx))
-               (push-back (* (abs dq) gear-ratio (/ 1.0 rotation-const)) (elt (elt plot-data-list (position :voltage-drop plot-key-list)) idx))
+               (push-back dq (elt (elt data-list (position :dq data-key-list)) joint-idx))
+               (push-back (* (abs dq) gear-ratio (/ 1.0 rotation-const)) (elt (elt data-list (position :voltage-drop data-key-list)) joint-idx))
+               (push-back servo-alarm (elt (elt data-list (position :servo-alarm data-key-list)) joint-idx))
                )
            (range (length (send *robot* :angle-vector)))
            (coerce (scale (/ 1.0 (* dt step)) (v- (send rs :angle-vector) prev-av)) cons)
+           (coerce (send rs :get :servo-alarm) cons)
            gear-ratio-list)
 
      (setq prev-av (send rs :angle-vector))
@@ -711,12 +720,14 @@
      )
 
     (graph-view
-     (list (elt (elt plot-data-list (position :voltage-drop plot-key-list)) 2)
-           (elt (elt plot-data-list (position :voltage-drop plot-key-list)) 3)
-           (elt (elt plot-data-list (position :board-vin plot-key-list)) 2)
-           (elt (elt plot-data-list (position :board-vin plot-key-list)) 3))
+     (reduce #'(lambda (ret plot-key)
+                 (append ret
+                         (mapcar #'(lambda (joint-name) (elt (elt data-list (position plot-key data-key-list)) (position joint-name joint-name-list))) plot-joint-name-list)))
+             (append '(nil) plot-key-list))
      tm-list
-     :keylist (list "voltage-drop-hip-p" "voltage-drop-knee" "vin-hip-p" "vin-knee")
+     :keylist (reduce #'(lambda (ret key-name)
+                          (append ret (mapcar #'(lambda (joint-name) (concatenate string key-name " " joint-name)) plot-joint-name-list)))
+                      (append '(nil) plot-key-name-list))
      :title fname
      :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
      :dump-graph save
