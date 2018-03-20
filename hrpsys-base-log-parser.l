@@ -76,7 +76,7 @@
 
 ;; デフォルトではない値を*rs-list*に追加
 (defun add-data-to-rs-list ()
-  (let* ((ret) (init-tm) (idx 0)
+  (let* ((ret) (init-tm) (idx 0) (urata-len 17) (num-joints (length (send *robot* :joint-list)))
          (limb-list
           (mapcar #'(lambda (x) (find-if #'(lambda (l) (member x (send (send *log* :robot) l :force-sensors))) '(:rleg :lleg :rarm :larm)))
                   (send (send *log* :robot) :force-sensors)))
@@ -91,6 +91,14 @@
            ;; (map float-vector #'rad2deg (send (send self :parser-list "sh_q") :read-state)))
            (map float-vector #'rad2deg (send (send *log* :parser-list "sh_qOut") :read-state)))
      ;; (map float-vector #'rad2deg (send (send *log* :parser-list "sh_q") :read-state)))
+     (if (send *log* :parser-list "RobotHardware0_servoState")
+           (let ((raw-state (coerce (send (send *log* :parser-list "RobotHardware0_servoState") :read-state) cons)))
+             (send *log* :set-robot-state1
+                   :servo-alarm
+                   (mapcar #'(lambda (x) (convert-to-servo-alarm (byte-convert x :from :float :to :integer)))
+                           (mapcar #'(lambda (joint-idx) (elt raw-state (* joint-idx urata-len))) (range num-joints))))
+             ))
+
      (let ((rs (elt *rs-list* idx)))
        (send rs :put :sh-lleg-ref-force (send (send *log* :parser-list "sh_lfsensorOut") :read-state))
        (send rs :put :sh-rleg-ref-force (send (send *log* :parser-list "sh_rfsensorOut") :read-state))
@@ -98,6 +106,7 @@
        (send rs :put :sh-rarm-ref-force (send (send *log* :parser-list "sh_rhsensorOut") :read-state))
        (send rs :put :stabilizer-end-coords-list (send *log* :stabilizer-end-coords-list))
        (send rs :put :imucoords (send *log* :imucoords))
+       (send rs :put :servo-alarm (send *log* :get-robot-state :servo-alarm))
        (setf (elt *rs-list* idx) rs)
        )
      (incf idx)
