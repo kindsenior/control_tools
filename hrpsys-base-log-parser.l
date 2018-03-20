@@ -81,8 +81,10 @@
           (mapcar #'(lambda (x) (find-if #'(lambda (l) (member x (send (send *log* :robot) l :force-sensors))) '(:rleg :lleg :rarm :larm)))
                   (send (send *log* :robot) :force-sensors)))
          (limb-idx (let ((cnt -1)) (mapcar #'(lambda (x) (incf cnt)) limb-list))))
+    (warn "(add-data-to-rs-list)~%")
     (do-until-key-with-check
      (progn (null-output (send *log* :state)) (if (find-method *log* :eof-p) (not (send *log* :eof-p))))
+     (if (= (mod idx 100) 0) (warn " ~a" idx))
      (unless init-tm
        (setq init-tm (send *log* :time)))
      ;; use reference from st, instead of sh
@@ -111,6 +113,7 @@
        )
      (incf idx)
      )
+    (warn "~% finished (add-data-to-rs-list)~%")
     (length *rs-list*)))
 
 (defun plot-rs (&key (fname nil) (mode :root-rot) (axis 2) (limb nil) (proc-mode :sleep) (robot hrp2jsknts-robot)
