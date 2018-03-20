@@ -428,7 +428,8 @@
      ( t
        (warning-message 3 "now converting *log* to robot-state list~%")
        (setq *rs-list* (create-rs-list :ri *log*))
-       (unix:system "beep; notify-send \"finised convering log file to robot state list\" -t 5; say parsed")
+       ;; (unix:system "beep; notify-send \"finised convering log file to robot state list\" -t 5; say parsed")
+       (unix:system "beep; notify-send \"finised convering log file to robot state list\" -t 5; echo \"done\" | festival --tts")
        (dump-loadable-structure rs-fname *rs-list*) )
      )
 
