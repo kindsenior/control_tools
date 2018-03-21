@@ -15,6 +15,7 @@
 
 ;; (load (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/jsk/gnuplotlib.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
 (load "~/prog/euslib/jsk/gnuplotlib.l")
+(load "util.l")
 
 (defvar *usage-funcs* nil)
 (unless (assoc :log-tools *usage-funcs*)
@@ -675,8 +676,8 @@
                                (fname "voltage-drop") (add-fname nil) (save nil) (mode "lines")
                                 (dt 0.002) (rotation-const 466))
   (let* ( (start-idx) (stop-idx) (servo-state-list) (error-list nil) (prev-av) (idx) (tm-list nil) (urata-len 17)
-         (joint-name-list (send-all (send *robot* :joint-list) :name))
-         (plot-joint-name-list (send-all (flatten (send *robot* :legs :joint-list)) :name))
+         (joint-name-list (get-joint-name-list))
+         (plot-joint-name-list (get-joint-name-list :limb :legs))
          (servo-state-key-list '(:dummy-alarm :motor-core-temp :motor-output :board-vin :ref-angle :enc-angle :abs-angle :enc-abs-diff :motor-outer-temp :ref-angle-shm
                                         :board-vdd :pgain :dgain :current :comm-normal :error0 :error1))
          (parse-key-list '(:board-vin :current)) (data-key-list (append parse-key-list '(:dq :voltage-drop :servo-alarm)))
@@ -727,7 +728,7 @@
     (graph-view
      (reduce #'(lambda (ret plot-key)
                  (append ret
-                         (mapcar #'(lambda (joint-name) (elt (elt data-list (position plot-key data-key-list)) (position joint-name joint-name-list))) plot-joint-name-list)))
+                         (mapcar #'(lambda (joint-name) (elt (elt data-list (position plot-key data-key-list)) (position joint-name joint-name-list :test #'equal))) plot-joint-name-list)))
              (append '(nil) plot-key-list))
      tm-list
      :keylist (reduce #'(lambda (ret key-name)
