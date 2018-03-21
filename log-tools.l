@@ -507,7 +507,7 @@
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) '(:lleg :rleg :larm :rarm)) :get-val 'geometry::bodies)) :glvertices) :set-color color float-opacity)
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) contact-limbs) :get-val 'geometry::bodies)) :glvertices) :set-color color contact-opacity))
 
-(defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz"))
+(defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz")) (save nil)
                                  (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act))
   (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil) (tm-list) (ref-cmz-list nil)
@@ -663,7 +663,7 @@
                         "Reference lz" "Actual lz" "Actual root accel z")
          :title fname
          :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
-         :dump-graph t
+         :dump-graph save
          :xlabel "Time[s]"
          :ylabel "CMz[mm]"
          :mode mode
