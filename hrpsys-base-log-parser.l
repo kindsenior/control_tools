@@ -41,6 +41,7 @@
                   (warn "~%"))) *usage-funcs*))
 
 (load "euslib-tools.l")
+(load "util.l")
 
 (unless (assoc :hrpsys-base-log-parser *usage-funcs*)
   (push (cons :hrpsys-base-log-parser
@@ -386,4 +387,76 @@
      :xlabel "Time [s]" :ylabel "ZMP, COG[mm]"
      :dump-graph save
      )
+    ))
+
+(defun plot-voltage-drop (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange '(0 70))
+                               (fname "voltage-drop") (add-fname nil) (save nil) (mode "lines")
+                                (dt 0.002) (rotation-const 466))
+  (let* ( (start-idx) (stop-idx) (servo-state-list) (error-list nil) (prev-av) (idx) (tm-list nil) (urata-len 17)
+         (joint-name-list (get-joint-name-list))
+         (plot-joint-name-list (get-joint-name-list :limb :legs))
+         (servo-state-key-list '(:dummy-alarm :motor-core-temp :motor-output :board-vin :ref-angle :enc-angle :abs-angle :enc-abs-diff :motor-outer-temp :ref-angle-shm
+                                        :board-vdd :pgain :dgain :current :comm-normal :error0 :error1))
+         (parse-key-list '(:board-vin :current)) (data-key-list (append parse-key-list '(:dq :voltage-drop :servo-alarm)))
+         (plot-key-list '(:voltage-drop :board-vin :servo-alarm))
+         (plot-key-name-list '("Voltage drop" "Vin" "error"))
+         (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 255.49 208.71 196.88 203.70 2202.58))) (make-list 19 :initial-element 1)))
+         ;; (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 332.14 233.75 252 275 241.071))) (make-list 19 :initial-element 1)))
+         )
+    (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
+
+    (send *gp* :command "set size 2,1.5")
+    (send *gp* :command "set key below")
+    (send *gp* :command "set key font \"Times New Roman,15\"")
+
+    (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
+    (setq rotation-const (* rotation-const 360.0 (/ 1.0 60)))
+    (setq prev-av (send (elt rs-list start-idx) :angle-vector))
+
+    (setq idx start-idx
+          data-list (mapcar #'(lambda (x) (make-list (length (send *robot* :angle-vector)))) data-key-list))
+
+    (do-until-key-with-check
+     (< idx stop-idx)
+
+     (setq rs (elt rs-list idx))
+     (push-back (send rs :time) tm-list)
+
+     (setq servo-state-list (send rs :get :servo-state))
+     (mapc #'(lambda (joint-idx dq servo-alarm gear-ratio)
+               (setq servo-state (subseq  servo-state-list (* joint-idx urata-len) (* (1+ joint-idx) urata-len)))
+               (mapc #'(lambda (key)
+                         (let ( (state-key-idx (position key servo-state-key-list)) (data-key-idx (position key data-key-list)) )
+                           (push-back (elt servo-state state-key-idx) (elt (elt data-list data-key-idx) joint-idx)) ))
+                     parse-key-list)
+               (push-back dq (elt (elt data-list (position :dq data-key-list)) joint-idx))
+               (push-back (* (abs dq) gear-ratio (/ 1.0 rotation-const)) (elt (elt data-list (position :voltage-drop data-key-list)) joint-idx))
+               (push-back servo-alarm (elt (elt data-list (position :servo-alarm data-key-list)) joint-idx))
+               )
+           (range (length (send *robot* :angle-vector)))
+           (coerce (scale (/ 1.0 (* dt step)) (v- (send rs :angle-vector) prev-av)) cons)
+           (coerce (send rs :get :servo-alarm) cons)
+           gear-ratio-list)
+
+     (setq prev-av (send rs :angle-vector))
+     (incf idx step)
+     )
+
+    (graph-view
+     (reduce #'(lambda (ret plot-key)
+                 (append ret
+                         (mapcar #'(lambda (joint-name) (elt (elt data-list (position plot-key data-key-list)) (position joint-name joint-name-list :test #'equal))) plot-joint-name-list)))
+             (append '(nil) plot-key-list))
+     tm-list
+     :keylist (reduce #'(lambda (ret key-name)
+                          (append ret (mapcar #'(lambda (joint-name) (concatenate string key-name " " joint-name)) plot-joint-name-list)))
+                      (append '(nil) plot-key-name-list))
+     :title fname
+     :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
+     :dump-graph save
+     :xlabel "Time[s]"
+     :ylabel "Voltage drop[V]"
+     :mode mode
+     )
+
     ))
