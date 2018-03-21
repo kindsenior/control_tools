@@ -671,7 +671,7 @@
         ))
   ))
 
-(defun plot-voltage-drop (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange '(0 60))
+(defun plot-voltage-drop (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange '(0 70))
                                (fname "voltage-drop") (add-fname nil) (save nil) (mode "lines")
                                 (dt 0.002) (rotation-const 466))
   (let* ( (start-idx) (stop-idx) (servo-state-list) (error-list nil) (prev-av) (idx) (tm-list nil) (urata-len 17)
@@ -686,6 +686,10 @@
          ;; (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 332.14 233.75 252 275 241.071))) (make-list 19 :initial-element 1)))
          )
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
+
+    (send *gp* :command "set size 2,1.5")
+    (send *gp* :command "set key below")
+    (send *gp* :command "set key font \"Times New Roman,15\"")
 
     (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
     (setq rotation-const (* rotation-const 360.0 (/ 1.0 60)))
