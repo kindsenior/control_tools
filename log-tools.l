@@ -642,17 +642,17 @@
      )
 
     (unless repeat
-      (let (ref-cmx-list ref-cmz-list ref-dcmz-list act-cmx-list act-cmz-list act-dcmz-list act-root-accel-z-list)
+      (let (ref-cmx-list ref-cmz-list ref-dcmz-list act-cmx-list act-cmz-list act-dcmz-list act-root-accel-z-list (pos-scale 10) (vel-scale 0.1) (acc-scale 100))
         (send *gp* :command "set ytics 100")
         (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
               ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
-              ref-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) ref-dcm-list)
-              ref-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) 5)) ref-lfoot-pos-list)
+              ref-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) vel-scale)) ref-dcm-list)
+              ref-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) pos-scale)) ref-lfoot-pos-list)
               act-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) act-cm-list)
               act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
-              act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) 0.1)) act-dcm-list)
-              act-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) 5)) act-lfoot-pos-list)
-              act-root-accel-z-list (mapcar #'(lambda (accel) (* (elt accel 2) 100)) act-root-accel-list))
+              act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) vel-scale)) act-dcm-list)
+              act-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) pos-scale)) act-lfoot-pos-list)
+              act-root-accel-z-list (mapcar #'(lambda (accel) (* (elt accel 2) acc-scale)) act-root-accel-list))
 
         (graph-view
          ;; (list ref-cmz-list act-cmz-list)
