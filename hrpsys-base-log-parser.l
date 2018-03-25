@@ -310,10 +310,11 @@
      :title fname
      :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
      :dump-graph save
-     :xlabel "Time[s]"
+     :xlabel "Time [s]"
      :ylabel "Foot force [N]"
      )
     ))
+
 (defun calc-cop (axis force-vector moment-vector)
   (/ (elt moment-vector (if (= axis 0) 1 0)) (elt force-vector 2) (if (= axis 0) -1 1)))
 
