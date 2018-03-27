@@ -515,6 +515,11 @@
         (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
+
+    ;; (send *gp* :command "set size 2,1.5")
+    (send *gp* :command "set key right inside")
+    (send *gp* :command "set key font \"Times New Roman,15\"")
+
     (unless (boundp '*ref-robot*)
       (setq *ref-robot* (instance (class *robot*) :init))
       (send-all (send-all (flatten (send-all (send *ref-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color ref-color 0.3)
