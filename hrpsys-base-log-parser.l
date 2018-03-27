@@ -462,24 +462,29 @@
 
     ))
 
-(defun plot-joint-torque (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange '(-100 100))
-                               (fname "voltage-drop") (add-fname nil) (save nil) (mode "lines")
+(defun plot-joint-data (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange nil)
+                               (add-fname nil) (save nil) (mode "lines")
                                (dt 0.002) (rotation-const 466))
-  (let* ( (start-idx) (stop-idx) (act-torque-vector) (error-list nil) (prev-av) (idx) (tm-list nil) (urata-len 17)
+  (let* ( (start-idx) (stop-idx) (act-torque-vector) (error-list nil) (prev-act-av) (prev-ref-av) (idx) (tm-list nil) (urata-len 17)
          (joint-name-list (get-joint-name-list))
-         (plot-joint-name-list (get-joint-name-list :limb :legs))
-         (parse-key-list '(:torque-vector)) (data-key-list (append parse-key-list '(:dq)))
-         (plot-key-list '(:torque-vector))
-         (plot-key-name-list '("toqrue"))
+         (plot-joint-name-list (get-joint-name-list :limb :lleg))
+         (parse-key-list '(:torque-vector)) (data-key-list (append parse-key-list '(:ref-dq :act-dq)))
+         (plot-keys-list (list '(:torque-vector) '(:ref-dq :act-dq)))
+         (plot-key-names-list (list '("") '("ref" "act")))
+         (fname-list '("joint-torque" "joint-vel"))
+         (ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
          )
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
-    ;; (send *gp* :command "set size 2,1.5")
+    (send *gp* :command "set size 1,0.7")
     (send *gp* :command "set key below")
     (send *gp* :command "set key font \"Times New Roman,15\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "set lmargin 8")
 
     (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
-    (setq prev-av (send (elt rs-list start-idx) :angle-vector))
+    (setq prev-act-av (send (elt rs-list start-idx) :angle-vector)
+          prev-ref-av (send (elt rs-list start-idx) :get :auto-balancer-reference-vector))
 
     (setq idx start-idx
           data-list (mapcar #'(lambda (x) (make-list (length (send *robot* :angle-vector)))) data-key-list))
@@ -490,34 +495,42 @@
      (setq rs (elt rs-list idx))
      (push-back (send rs :time) tm-list)
 
-     (mapc #'(lambda (joint-idx dq act-torque)
-               (push-back dq (elt (elt data-list (position :dq data-key-list)) joint-idx))
+     (mapc #'(lambda (joint-idx ref-dq act-dq act-torque)
+               (push-back ref-dq (elt (elt data-list (position :ref-dq data-key-list)) joint-idx))
+               (push-back act-dq (elt (elt data-list (position :act-dq data-key-list)) joint-idx))
                (push-back act-torque (elt (elt data-list (position :torque-vector data-key-list)) joint-idx))
                )
            (range (length (send *robot* :angle-vector)))
-           (coerce (scale (/ 1.0 (* dt step)) (v- (send rs :angle-vector) prev-av)) cons)
+           (coerce (scale (/ 1.0 (* dt step)) (v- (send rs :get :auto-balancer-reference-vector) prev-ref-av)) cons)
+           (coerce (scale (/ 1.0 (* dt step)) (v- (send rs :angle-vector) prev-act-av)) cons)
            (coerce (send rs :torque-vector) cons)
            )
 
-     (setq prev-av (send rs :angle-vector))
+     (setq prev-act-av (send rs :angle-vector)
+           prev-ref-av (send rs :get :auto-balancer-reference-vector))
      (incf idx step)
      )
 
-    (graph-view
-     (reduce #'(lambda (ret plot-key)
-                 (append ret
-                         (mapcar #'(lambda (joint-name) (elt (elt data-list (position plot-key data-key-list)) (position joint-name joint-name-list :test #'equal))) plot-joint-name-list)))
-             (append '(nil) plot-key-list))
-     tm-list
-     :keylist (reduce #'(lambda (ret key-name)
-                          (append ret (mapcar #'(lambda (joint-name) (concatenate string key-name " " joint-name)) plot-joint-name-list)))
-                      (append '(nil) plot-key-name-list))
-     :title fname
-     :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
-     :dump-graph save
-     :xlabel "Time [s]"
-     :ylabel "Joint torque [Nm]"
-     :mode mode
-     )
-
+    (mapc #'(lambda (plot-keys plot-key-names fname ylabel)
+              (graph-view
+               (reduce #'(lambda (ret plot-key)
+                           (append ret
+                                   (mapcar #'(lambda (joint-name) (elt (elt data-list (position plot-key data-key-list)) (position joint-name joint-name-list :test #'equal))) plot-joint-name-list)))
+                       (append '(nil) plot-keys))
+               tm-list
+               :keylist (reduce #'(lambda (ret key-name)
+                                    (append ret (mapcar #'(lambda (joint-name) (concatenate string key-name " " joint-name)) plot-joint-name-list)))
+                                (append '(nil) plot-key-names))
+               :title ""
+               :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
+               :dump-graph save
+               ;; :xlabel "Time [s]"
+               :xlabel ""
+               :ylabel ylabel
+               :mode mode
+               ))
+          plot-keys-list
+          plot-key-names-list
+          fname-list
+          ylabel-list)
     ))
