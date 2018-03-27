@@ -1,0 +1,22 @@
+
+;; (defun make-foot-step-coords (&key (step-num 5) (stride-length 200) (initial-swing-limb :lleg) (step-width 200))
+;;   (let* ( (limb-list '(:lleg :rleg)) (width-gain-list '(1 -1)) (initial-support-limb (car (remove initial-swing-limb limb-list)))
+;;           (limb-idx (position initial-swing-limb limb-list))
+;;           (current-coords (mapcar #'(lambda (limb) ())))
+;;           (half-step-width (/ step-width 2.0)))
+;;     (append (list (make-cords :pos (float-vector 0 (* half-step-width (elt width-gain-list (position initial-support-limb limb-list)))) :name initial-support-limb))
+;;             (mapcar #'(lambda (limb))
+;;             )
+;;   ))
+
+(defun test-walk (&key (step-length 100) (step-time 1.2))
+  (let ( (stride-length (* step-length 2)) )
+    (send *ri* :set-foot-steps-with-param
+          (list (make-coords :pos (float-vector (* stride-length 0) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 0.5) 100 0) :name :lleg)
+                (make-coords :pos (float-vector (* stride-length 1) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 1.5) 100 0) :name :lleg)
+                (make-coords :pos (float-vector (* stride-length 2) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 2.0) 100 0) :name :lleg))
+          (list 0 50 50 50 50 50)
+          (list step-time step-time step-time step-time step-time step-time)
+          (list 0 0 0 0 0 0)
+          (list 0 0 0 0 0 0))
+    ))
