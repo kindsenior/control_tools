@@ -258,7 +258,7 @@
     (float-vector (* 0.5 (+ (apply #'min (mapcar #'(lambda (x) (elt x 0)) support-vertices)) (apply #'max (mapcar #'(lambda (x) (elt x 0)) support-vertices)))) 0 0)))
 
 (defun play-hrpsysfile-impl (&key fname (real t) (tm 5) (save-log t) (save-shm-log nil) (plugin t) (use-init-file nil) (start-st t) (set-pose t) (add-fname nil) (zmp-offset nil)
-                                  (sample-name "ShuffleSample") (st-algorithm :eefmqpcop2))
+                                  (sample-name "ShuffleSample") (st-algorithm :eefmqpcop2) (prepare t) (wait-key t))
   (let (path local-path motion-time)
    (if plugin
        (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
@@ -269,7 +269,7 @@
 
   (unless zmp-offset (setq zmp-offset (calc-default-zmp-offset)))
 
-  (prepare-experiment :start-st start-st :set-pose set-pose :st-algorithm st-algorithm :zmp-offset zmp-offset)
+  (if prepare (prepare-experiment :start-st start-st :set-pose set-pose :st-algorithm st-algorithm :zmp-offset zmp-offset))
   (if use-init-file
       (let ((__init-fname__ (concatenate string *__fname__* "-init"));; fname-init
             (init-fname (concatenate string fname "-init")));; _fname-init
@@ -285,7 +285,7 @@
   (if (or (= (send *ri* :state :emergency-mode) 0) (not (send *ri* :state :emergency-mode)));; emergency-mode-off or st-off
       (progn
         (warning-message 3 "Push y to start or n to resign~%")
-        (when (y-or-n-p)
+        (when (or (not wait-key) (y-or-n-p))
           (when save-log
             (warn "start-log~%")
             (send *ri* :start-log))
