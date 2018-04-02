@@ -10,7 +10,14 @@
 ;;   ))
 
 (defun test-walk (&key (step-length 100) (step-time 1.2))
-  (let ( (stride-length (* step-length 2)) )
+  (let ( (stride-length (* step-length 2)) (org-st-algorithm (send (send *ri* :get-st-param) :st_algorithm)) (org-joint-control-mode (send (send *ri* :get-st-param) :joint_control_mode)) )
+    (send *ri* :stop-st)
+    (send *ri* :set-st-param :st-algorithm :eefmqpcop)
+    (send *ri* :set-st-param :joint-control-mode 0)
+    (send *ri* :stop-auto-balancer)
+    (send *ri* :start-auto-balancer :limbs '(:lleg :rleg))
+    (send *ri* :start-st)
+
     (send *ri* :set-foot-steps-with-param
           (list (make-coords :pos (float-vector (* stride-length 0) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 0.5) 100 0) :name :lleg)
                 (make-coords :pos (float-vector (* stride-length 1) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 1.5) 100 0) :name :lleg)
@@ -19,4 +26,24 @@
           (list step-time step-time step-time step-time step-time step-time)
           (list 0 0 0 0 0 0)
           (list 0 0 0 0 0 0))
+
+    (send *ri* :stop-st)
+    (send *ri* :set-st-param :st-algorithm org-st-algorithm)
+    (send *ri* :set-st-param :joint-control-mode org-joint-control-mode)
+    (send *ri* :start-st)
+    ))
+
+(defun test-shuffle ()
+  (let ( (fname "_slide-forward-250step-len-5step") (sample-name "ShuffleSample") (motion-time) (local-path)
+         (org-support-pgain (send-all (send (send *ri* :get-st-param) :joint_servo_control_parameters) :support_pgain)) )
+
+    (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
+
+    (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
+    (setq motion-time (get-motion-time local-path *__fname__*))
+    ;; (copy-files :fname "slide-forward-250step-len-5step" :sample-name "ShuffleSample")
+    (send *ri* :set-st-param :joint-servo-control-parameters (list :support_pgain '(#f(5.0 30.0 10.0 5.0 0.5 1) #f(5.0 30.0 10.0 5.0 0.5 1) #f(100.0 100.0 100.0 100.0 100.0 100.0 100.0) #f(100.0 100.0 100.0 100.0 100.0 100.0 100.0))))
+    (play-hrpsysfile :fname fname :sample-name sample-name :st-algorithm :eefmqp :add-fname "sim-1smu-0.2dmu_SP5,30,10,5,0.5,1" :tm 1 :save-log nil :wait-key nil)
+    (unix:sleep (round motion-time))
+    (send *ri* :set-st-param :joint-servo-control-parameters (list :support_pgain org-support-pgain))
     ))
