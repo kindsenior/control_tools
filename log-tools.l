@@ -508,10 +508,11 @@
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) contact-limbs) :get-val 'geometry::bodies)) :glvertices) :set-color color contact-opacity))
 
 (defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz")) (save nil)
-                                 (dt 0.002) (fz-thresh 50) (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act))
-  (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm)
-        (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil) (tm-list) (ref-cmz-list nil)
-        (ref-r-fz-list nil) (ref-l-fz-list nil) (act-r-fz-list nil) (act-l-fz-list nil) (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
+                                 (dt 0.002) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act))
+  (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
+        (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil)
+        (ref-root-pos-list nil) (ref-root-vel-list nil)
+        (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
         (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
@@ -519,6 +520,9 @@
     ;; (send *gp* :command "set size 2,1.5")
     (send *gp* :command "set key right inside")
     (send *gp* :command "set key font \"Times New Roman,15\"")
+
+    (setq tm-list nil
+          ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil)
 
     (unless (boundp '*ref-robot*)
       (setq *ref-robot* (instance (class *robot*) :init))
@@ -541,7 +545,8 @@
      (setq rs (elt rs-list idx))
      (push-back (send rs :time) tm-list)
 
-     (when (= idx start-idx);; initial procedure
+     ;; initial procedure
+     (when (= idx start-idx)
        (send *robot* :angle-vector (send rs :angle-vector))
        (send *robot* :fix-leg-to-coords (make-coords))
        ;; (send *robot* :reset-coords)
@@ -555,6 +560,7 @@
        (send *com-robot* :fix-leg-to-coords (make-coords))
 
        (setq ref-last-cm (copy-object (send *ref-robot* :centroid)))
+       (setq last-ref-root-pos (send (send (car (send *ref-robot* :links)) :copy-worldcoords) :worldpos))
 
        (setq last-cm (copy-object (send *robot* :centroid)))
        (setq prev-act-contact-limbs (get-contact-limbs (car rs-list) :fz-thresh fz-thresh :frame :act))
@@ -566,6 +572,7 @@
              act-root-accel-list nil)
        )
 
+     ;; procedure for getting reference data
      (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
      (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0 during go-pos
      (send *ref-robot* :transform abc-offset-tf :world)
@@ -575,6 +582,13 @@
      (push-back (scale (/ 1.0 time-step) (v- (car (last ref-cm-list)) ref-last-cm)) ref-dcm-list)
      (setq ref-last-cm (car (last ref-cm-list)))
 
+     (push-back (send (send (car (send *ref-robot* :links)) :copy-worldcoords) :worldpos) ref-root-pos-list)
+     (push-back (scale (/ 1.0 time-step) (v- (car (last ref-root-pos-list)) last-ref-root-pos)) ref-root-vel-list)
+     (setq last-ref-root-pos (car (last ref-root-pos-list)))
+
+     ;; procedure for getting actual data
+     ;; set fz-thresh (need to modify)
+     (if (and takeoff-idx (> idx (+ takeoff-idx (/ 0.05 dt)))) (setq fz-thresh landing-fz-thresh) (setq fz-thresh takeoff-fz-thresh));; takeoff-idx is nil during support phase
 
      (if (and (> (length (setq act-contact-limbs (get-contact-limbs rs :fz-thresh fz-thresh :frame :act))) 0) (> (length prev-act-contact-limbs) 0))
          (progn ;; supporting phase
@@ -647,11 +661,13 @@
      )
 
     (unless repeat
-      (let (ref-cmx-list ref-cmz-list ref-dcmz-list act-cmx-list act-cmz-list act-dcmz-list act-root-accel-z-list (pos-scale 10) (vel-scale 0.1) (acc-scale 100))
+      (let ((pos-scale 10) (vel-scale 0.1) (acc-scale 100))
         (send *gp* :command "set ytics 100")
         (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
               ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
               ref-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) vel-scale)) ref-dcm-list)
+              ref-root-y-list (mapcar #'(lambda (pos) (elt pos 1)) ref-root-pos-list)
+              ref-root-dy-list (mapcar #'(lambda (pos) (elt pos 1)) ref-root-vel-list)
               ref-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) pos-scale)) ref-lfoot-pos-list)
               act-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) act-cm-list)
               act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
@@ -675,4 +691,3 @@
          )
         ))
   ))
-
