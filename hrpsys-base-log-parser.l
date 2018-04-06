@@ -465,25 +465,29 @@
 
     ))
 
-(defun plot-joint-data (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange nil)
-                               (add-fname nil) (save nil) (mode "lines")
-                               (dt 0.002) (rotation-const 466))
+;; 複数の*rs-list*に対して関数を呼んでreplotすると上手くプロットできない時がある
+(defun plot-joint-data (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange nil) (replot nil)
+                             (plot-joint-name-list (get-joint-name-list :limb :lleg))
+                             (plot-keys-list (list '(:torque-vector) '(:ref-dq :act-dq))) (plot-key-names-list (list '("") '("ref" "act"))) (fname-list '("joint-torque" "joint-vel")) (ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
+                             (add-fname nil) (save nil) (add-key-name nil) (mode "lines")
+                             (dt 0.002) (rotation-const 466))
   (let* ( (start-idx) (stop-idx) (act-torque-vector) (error-list nil) (prev-act-av) (prev-ref-av) (idx) (tm-list nil) (urata-len 17)
          (joint-name-list (get-joint-name-list))
-         (plot-joint-name-list (get-joint-name-list :limb :lleg))
          (parse-key-list '(:torque-vector)) (data-key-list (append parse-key-list '(:ref-dq :act-dq)))
-         (plot-keys-list (list '(:torque-vector) '(:ref-dq :act-dq)))
-         (plot-key-names-list (list '("") '("ref" "act")))
-         (fname-list '("joint-torque" "joint-vel"))
-         (ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
          )
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
-    (send *gp* :command "set size 1,0.7")
-    (send *gp* :command "set key below")
-    (send *gp* :command "set key font \"Times New Roman,15\"")
-    (send *gp* :command "set ytics autofreq")
-    (send *gp* :command "set lmargin 8")
+    (if (or (not (boundp '*gp-list*)) (not (= (length *gp-list*) (length plot-keys-list))))
+        (setq *gp-list* (mapcar #'(lambda (x) (gnuplot)) plot-keys-list)))
+
+    (mapc #'(lambda (gp)
+              (send gp :command "set size 1,0.5")
+              (send gp :command "set key below")
+              (send gp :command "set key font \"Times New Roman,15\"")
+              (send gp :command "set tics font \"Times New Roman,15\"")
+              (send gp :command "set ytics autofreq")
+              (send gp :command "set lmargin 8"))
+          *gp-list*)
 
     (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
     (setq prev-act-av (send (elt rs-list start-idx) :angle-vector)
@@ -514,7 +518,8 @@
      (incf idx step)
      )
 
-    (mapc #'(lambda (plot-keys plot-key-names fname ylabel)
+    (if add-key-name (setq add-key-name (concatenate string add-key-name " ")) (setq add-key-name ""))
+    (mapc #'(lambda (gp plot-keys plot-key-names fname ylabel)
               (graph-view
                (reduce #'(lambda (ret plot-key)
                            (append ret
@@ -522,8 +527,9 @@
                        (append '(nil) plot-keys))
                tm-list
                :keylist (reduce #'(lambda (ret key-name)
-                                    (append ret (mapcar #'(lambda (joint-name) (concatenate string key-name " " joint-name)) plot-joint-name-list)))
+                                    (append ret (mapcar #'(lambda (joint-name) (concatenate string add-key-name key-name " " joint-name)) plot-joint-name-list)))
                                 (append '(nil) plot-key-names))
+               :graph-instance gp
                :title ""
                :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
                :dump-graph save
@@ -531,7 +537,9 @@
                :xlabel ""
                :ylabel ylabel
                :mode mode
+               :replot replot
                ))
+          *gp-list*
           plot-keys-list
           plot-key-names-list
           fname-list
