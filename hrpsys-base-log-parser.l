@@ -299,21 +299,22 @@
         (axis 2) (cutoff-f nil) (xrange nil) (limb '(:lleg :rleg)) (save t))
   (let* ( (xrange (calc-xrange xrange rs-list)) (data (subseq *rs-list* (car xrange) (cadr xrange))))
     (graph-view
-     (delete nil (list (if (find :rleg limb) (low-pass-filter (mapcar #'(lambda (x) (elt (send x :get :rleg-force-vector) axis)) data) :cutoff-f cutoff-f))
-                       (if (find :lleg limb) (low-pass-filter (mapcar #'(lambda (x) (elt (send x :get :lleg-force-vector) axis)) data) :cutoff-f cutoff-f))
-                       (if (find :rleg limb) (mapcar #'(lambda (x) (elt (send x :get :sh-rleg-ref-force) axis)) data))
-                       (if (find :lleg limb) (mapcar #'(lambda (x) (elt (send x :get :sh-lleg-ref-force) axis)) data))
+     (delete nil (list (if (find :rleg limb) (low-pass-filter (mapcar #'(lambda (x) (elt (send x :get :rleg-off-force-vector) axis)) data) :cutoff-f cutoff-f))
+                       (if (find :lleg limb) (low-pass-filter (mapcar #'(lambda (x) (elt (send x :get :lleg-off-force-vector) axis)) data) :cutoff-f cutoff-f))
+                       ;; (if (find :rleg limb) (mapcar #'(lambda (x) (elt (send x :get :sh-rleg-ref-force) axis)) data))
+                       ;; (if (find :lleg limb) (mapcar #'(lambda (x) (elt (send x :get :sh-lleg-ref-force) axis)) data))
                        (if (find :rleg limb) (mapcar #'(lambda (x) (elt (send x :get :st-rleg-ref-force) axis)) data))
                        (if (find :lleg limb) (mapcar #'(lambda (x) (elt (send x :get :st-lleg-ref-force) axis)) data))))
      (mapcar #'(lambda (x) (send x :time)) data)
      :keylist (delete nil (list (if (find :rleg limb) "act rleg force z") (if (find :lleg limb) "act lleg force z")
                                 (if (find :rleg limb) "ref rleg force z") (if (find :lleg limb) "ref lleg force z")
-                                (if (find :rleg limb) "modified ref rleg force z") (if (find :lleg limb) "modified ref lleg force z") ))
-     :title fname
+                                ;; (if (find :rleg limb) "modified ref rleg force z") (if (find :lleg limb) "modified ref lleg force z")
+                                ))
+     :title ""
      :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
      :dump-graph save
      :xlabel "Time [s]"
-     :ylabel "Foot force [N]"
+     :ylabel "Foot force z [N]"
      )
     ))
 
