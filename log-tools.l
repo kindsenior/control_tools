@@ -231,7 +231,7 @@
     (if fname
         (progn 
           (case (probe-file fname)
-            (:file (setq fname-with-path (car (reg-split "\\." fname))) )                       ;; fnameにログファイル名を指定した場合
+            (:file (setq fname-with-path (reduce #'(lambda (ret val) (concatenate string ret val)) (butlast (reg-split "\\." fname)))) ) ;; fnameにログファイル名を指定した場合
             (:directory (setq fname-with-path (concatenate string fname "/" (car (last (reg-split "/" fname)))) )) ;; fnameにログディレクトリ名を指定した場合
             (nil (setq fname-with-path 
                        (concatenate string (unix:getenv "HOME") "/Copy/Documents/log/" (send *robot* :name) "/" fname "/" (car (last (reg-split "/" fname))))) )
@@ -413,7 +413,7 @@
 
 ;; *log* *rs-list* の作成, fname-with-pathのparse
 (defun prepare-plot ( &key (create nil) (fname nil) (robot (class *robot*)) (rs-list))
-  (let ( fname-with-path fname rs-fname )
+  (let ( (fname-with-path) (rs-fname) )
     (multiple-value-setq (fname-with-path fname) (get-parsed-fname fname))
     (setq rs-fname (concatenate string (reg-replace "[^\/]*$" "" fname-with-path) "rs-list.l"))
 
