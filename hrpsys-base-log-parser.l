@@ -545,3 +545,121 @@
           fname-list
           ylabel-list)
     ))
+
+(defun plot-high-jump-motion-data ()
+  (let ( (start-tm 2) (stop-tm 3.5) )
+    (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 7500))) (list *ref-robot* *robot*))
+
+    (unless (boundp '*high-jump-rs-list*)
+      (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")
+      (setq *high-jump-rs-list* (copy-object *rs-list*)))
+
+    (analyze-jump-motion :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
+
+    (send *gp* :command "set size 1,0.5")
+    (send *gp* :command "set key right inside")
+    (send *gp* :command "set key font \"Times New Roman,15\"")
+    (send *gp* :command "set tics font \"Times New Roman,15\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "set lmargin 8")
+
+    (graph-view (list ref-cmz-list act-cmz-list) tm-list :keylist '("reference" "actual") :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-cmz.eps" :ylabel "COG velocity z [mm/s]")
+    (graph-view (list ref-dcmz-list act-dcmz-list) tm-list :keylist '("reference" "actual") :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-dcmz.eps" :ylabel "COG z [mm]")
+    (graph-view (list ref-l-fz-list ref-r-fz-list act-l-fz-list act-r-fz-list) tm-list :keylist '("reference left foot fz" "reference right foot fz" "actual left foot fz" "actual right foot fz")
+                :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-fz.eps" :ylabel "Force z [N]")
+
+    (plot-joint-data :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :save t :step 2
+                     :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("high-jump-joint-torque") :ylabel-list '("Joint torque [Nm]"))
+    ))
+
+(defun plot-different-mass-jump-comparison ()
+  (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
+
+  (unless (boundp '*correct-mass-rs-list*)
+    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-250msec_postq_old-chest-mass_0dxgfz_0delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_JAXON_BLUE_2018_03-01_20-54_31")
+    (setq *correct-mass-rs-list* (copy-object *rs-list*)))
+
+  (unless (boundp '*incorrect-mass-rs-list*)
+    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-250msec_postq_modify-chest-mass_0dxgfz_0delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_little-back-tilt_JAXON_BLUE_2018_03-01_20-45_25")
+    (setq *incorrect-mass-rs-list* (copy-object *rs-list*)))
+
+  ;; (analyze-jump-motion :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
+  ;; (setq correct-mass-ref-dcmz-list ref-dcmz-list
+  ;;       correct-mass-act-l-fz-list act-l-fz-list)
+  ;; (setq correct-tm-list tm-list)
+
+  ;; (analyze-jump-motion :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
+  ;; (setq incorrect-mass-ref-dcmz-list ref-dcmz-list
+  ;;       incorrect-mass-act-l-fz-list act-l-fz-list)
+
+  (send *gp* :command "set size 1,0.5")
+  (send *gp* :command "set key right inside")
+  (send *gp* :command "set key font \"Times New Roman,15\"")
+  (send *gp* :command "set tics font \"Times New Roman,15\"")
+  (send *gp* :command "set ytics autofreq")
+  (send *gp* :command "set lmargin 8")
+
+  (graph-view (list correct-mass-ref-dcmz-list incorrect-mass-ref-dcmz-list) tm-list :keylist '("corect mass" "incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
+  (graph-view (list correct-mass-act-l-fz-list incorrect-mass-act-l-fz-list) tm-list :keylist '("corect mass" "incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-fz-comparison.eps" :ylabel "fz [N]")
+
+  (plot-joint-data :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 2 :add-key-name "correct mass"
+                   :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
+  (plot-joint-data :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 2 :replot t :add-key-name "incorrect mass"
+                   :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
+  )
+
+(defun plot-walk-shuffle-root-link-comparison ()
+  (unless (boundp '*walk-rs-list*)
+    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/choreonoid_250step-len_5step_1step-tm_pos-eefmqpcop2_JAXON_BLUE_2018_03-30_07-14_27")
+    (setq *walk-rs-list* (copy-object *rs-list*)))
+
+  (unless (boundp '*shuffle-rs-list*)
+    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/choreonoid_slide-forward-250step-len-5step_JAXON_BLUE_2018_03-30_07-05_00")
+    (setq *shuffle-rs-list* (copy-object *rs-list*)))
+
+  (analyze-jump-motion :rs-list *walk-rs-list* :stop-tm 7)
+  (setq walk-ref-root-y-list ref-root-y-list
+        walk-ref-root-dy-list ref-root-dy-list)
+
+  (analyze-jump-motion :rs-list *shuffle-rs-list* :stop-tm 7)
+  (setq shuffle-ref-root-y-list ref-root-y-list
+        shuffle-ref-root-dy-list ref-root-dy-list)
+
+  (send *gp* :command "set size 1,0.5")
+  (send *gp* :command "set key right inside")
+  (send *gp* :command "set key font \"Times New Roman,15\"")
+  (send *gp* :command "set tics font \"Times New Roman,15\"")
+  (send *gp* :command "set ytics autofreq")
+  (send *gp* :command "set lmargin 8")
+  (send *gp* :command "set ylabel offset 2")
+
+  (graph-view (list walk-ref-root-y-list shuffle-ref-root-y-list) tm-list :keylist '("walk" "shuffle") :title "" :dump-graph t :xlabel "" :graph-fname "walk-shuffle-root-y-comparison.eps" :ylabel "Waist side\\n position [mm]")
+  (graph-view (list walk-ref-root-dy-list shuffle-ref-root-dy-list) tm-list :keylist '("walk" "shuffle") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "walk-shuffle-root-dy-comparison.eps" :ylabel "Waist side\\n velocity [mm/s]")
+  )
+
+(defun plot-pos-tq-conrol-jump-comparison ()
+  (unless (boundp '*pos-rs-list*)
+    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-200msec_3spline-TO-LA_2700pdamp_20rdamp_JAXON_BLUE_2018_01-18_20-30_39")
+    (setq *pos-rs-list* (copy-object *rs-list*)))
+
+  (unless (boundp '*tq-rs-list*)
+    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-200msec_postq_calc-extforce-only-onground_0dxgfz_0.1delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_JAXON_BLUE_2018_02-28_23-25_20")
+    (setq *tq-rs-list* (copy-object *rs-list*)))
+
+  (analyze-jump-motion :rs-list *pos-rs-list* :start-tm 1 :stop-tm 5 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
+  (setq pos-act-l-fz-list act-l-fz-list)
+  (setq correct-tm-list tm-list)
+
+  (analyze-jump-motion :rs-list *tq-rs-list* :start-tm 1.5 :stop-tm 5.5 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
+  (setq tq-act-l-fz-list act-l-fz-list)
+
+  (send *gp* :command "set size 1,0.5")
+  (send *gp* :command "set key right inside")
+  (send *gp* :command "set key font \"Times New Roman,15\"")
+  (send *gp* :command "set tics font \"Times New Roman,15\"")
+  (send *gp* :command "set ytics autofreq")
+  (send *gp* :command "set lmargin 8")
+  (send *gp* :command "set yrange [-100:500]")
+
+  (graph-view (list pos-act-l-fz-list tq-act-l-fz-list) tm-list :keylist '("Ordinary PD control" "Torque/PD gain shift control") :title "" :dump-graph t :xlabel "" :graph-fname "pos-tq-jump-force-comparison.eps" :ylabel "Foot force z [N]")
+  )
