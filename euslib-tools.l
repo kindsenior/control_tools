@@ -19,6 +19,9 @@
     (reverse ret)
   ))
 
+(defun char-replace (old-char new-char str)
+  (coerce (substitute (car (coerce new-char cons)) (car (coerce old-char cons)) (coerce str cons)) string))
+
 (defun range (num)
   (let ((i 0) (ret-list nil))
     (while (< i num) (push i ret-list) (incf i))

@@ -12,5 +12,5 @@
                                  (send-all (flatten (send robot limb :joint-list)) :name)
                                (send-all (send robot limb :joint-list) :name))
                            (send-all (send robot :joint-list) :name))) )
-    (if underbar-replace (mapcar #'(lambda (x) (reg-replace "_" underbar-replace x)) raw-joint-name) raw-joint-name)
+    (if underbar-replace (mapcar #'(lambda (x) (char-replace "_" underbar-replace x)) raw-joint-name) raw-joint-name)
     ))
