@@ -415,12 +415,14 @@
 (defun prepare-plot ( &key (create nil) (fname nil) (robot (class *robot*)) (rs-list))
   (let ( (fname-with-path) (rs-fname) )
     (multiple-value-setq (fname-with-path fname) (get-parsed-fname fname))
+    (warn "fname-with-path: ~a~%" fname-with-path)
+    (warn "fname: ~a~%" fname)
     (setq rs-fname (concatenate string (reg-replace "[^\/]*$" "" fname-with-path) "rs-list.l"))
 
     (when (or (not (boundp '*log*)) create)
       (warning-message 3 "create new *log* from file:~a robot:~a~%" fname-with-path robot)
       (setq *log* (create-log-interface fname-with-path :robot robot)))
-    
+
     (cond
      ( (and (probe-file rs-fname) (not create) )
        (warning-message 3 "load preserved robot-state list (~a)~%" rs-fname)
@@ -433,7 +435,7 @@
        (dump-loadable-structure rs-fname *rs-list*) )
      )
 
-    (if rs-list (setq 'rs-list (copy-object *rs-list*)))
+    ;; (if rs-list (setq 'rs-list (copy-object *rs-list*)))
     (unless (and (boundp '*viewer*) *viewer*) (objects *robot*))
     fname-with-path
     ))
