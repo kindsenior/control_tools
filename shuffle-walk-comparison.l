@@ -9,7 +9,7 @@
 ;;             )
 ;;   ))
 
-(defun test-walk (&key (step-length 100) (step-time 1.2))
+(defun test-walk (&key (step-length 100) (step-time 1.2) (step-height 65))
   (let ( (stride-length (* step-length 2)) (org-st-algorithm (send (send *ri* :get-st-param) :st_algorithm)) (org-joint-control-mode (send (send *ri* :get-st-param) :joint_control_mode)) )
     (send *ri* :stop-st)
     (send *ri* :set-st-param :st-algorithm :eefmqpcop)
@@ -22,7 +22,7 @@
           (list (make-coords :pos (float-vector (* stride-length 0) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 0.5) 100 0) :name :lleg)
                 (make-coords :pos (float-vector (* stride-length 1) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 1.5) 100 0) :name :lleg)
                 (make-coords :pos (float-vector (* stride-length 2) -100 0) :name :rleg) (make-coords :pos (float-vector (* stride-length 2.0) 100 0) :name :lleg))
-          (list 0 50 50 50 50 50)
+          (list 0 step-height step-height step-height step-height step-height)
           (list step-time step-time step-time step-time step-time step-time)
           (list 0 0 0 0 0 0)
           (list 0 0 0 0 0 0))
