@@ -608,13 +608,14 @@
                    :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
   )
 
-(defun plot-walk-shuffle-root-link-comparison ()
+(defun plot-walk-shuffle-root-link-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
   (unless (boundp '*walk-rs-list*)
-    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/choreonoid_250step-len_5step_1step-tm_pos-eefmqpcop2_JAXON_BLUE_2018_03-30_07-14_27")
+    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/choreonoid_250step-len_5step_1step-tm_pos-eefmqpcop2_JAXON_BLUE_2018_03-30_07-14_27"))
     (setq *walk-rs-list* (copy-object *rs-list*)))
 
   (unless (boundp '*shuffle-rs-list*)
-    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/choreonoid_slide-forward-250step-len-5step_JAXON_BLUE_2018_03-30_07-05_00")
+    ;; (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/choreonoid_slide-forward-250step-len-5step_JAXON_BLUE_2018_03-30_07-05_00")
+    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/slide-forward-200step-len-5step_pos-eefmqocop2_0delay-xg-dxg_0.06xoff_0.15-0.15-0.2xstep_0.05soleoff_sfc-0.6smu-0.6dmu_500CM_500P_200L_1Lz_0.6f_10n_200nz_toe-float_JAXON_BLUE_2018_04-13_00-21_12"))
     (setq *shuffle-rs-list* (copy-object *rs-list*)))
 
   (analyze-jump-motion :rs-list *walk-rs-list* :stop-tm 7)
