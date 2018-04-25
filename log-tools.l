@@ -510,7 +510,7 @@
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) contact-limbs) :get-val 'geometry::bodies)) :glvertices) :set-color color contact-opacity))
 
 (defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz")) (save nil)
-                                 (dt 0.002) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act))
+                                 (dt 0.002) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act) (dcm-lpr 0))
   (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil)
         (ref-root-pos-list nil) (ref-root-vel-list nil)
@@ -606,7 +606,7 @@
              (setq takeoff-idx nil))
            ;; (warn "~a ~a ~a~%" (send rs :time) prev-act-contact-limbs (send prev-act-contact-coords :worldpos))
            (push-back (copy-object (send *robot* :centroid)) act-cm-list)
-           (push-back (scale (/ 1.0 time-step) (v- (car (last act-cm-list)) last-cm)) act-dcm-list)
+           (push-back (v+ (scale (* dcm-lpr (/ 1.0 time-step)) (v- (car (last act-cm-list)) last-cm)) (scale (- 1 dcm-lpr) (if act-dcm-list (car (last act-dcm-list)) #f(0 0 0)))) act-dcm-list)
            (setq last-cm (car (last act-cm-list)))
            (setq last-dcm (car (last act-dcm-list)))
 
