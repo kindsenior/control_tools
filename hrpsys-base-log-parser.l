@@ -600,7 +600,7 @@
   (send *gp* :command "set lmargin 8")
 
   (graph-view (list correct-mass-ref-dcmz-list incorrect-mass-ref-dcmz-list) tm-list :keylist '("corect mass" "incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
-  (graph-view (list correct-mass-act-l-fz-list incorrect-mass-act-l-fz-list) tm-list :keylist '("corect mass" "incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-fz-comparison.eps" :ylabel "fz [N]")
+  (graph-view (list correct-mass-act-l-fz-list incorrect-mass-act-l-fz-list) tm-list :keylist '("corect mass" "incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-fz-comparison.eps" :ylabel "Foot force z [N]")
 
   (plot-joint-data :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 2 :add-key-name "correct mass"
                    :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
@@ -685,7 +685,7 @@
   (setq high-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
         high-sgain-act-l-fz-list act-l-fz-list)
 
-  (send *gp* :command "set size 1,0.5")
+  (send *gp* :command "set size 1,0.6")
   (send *gp* :command "set key right inside")
   (send *gp* :command "set key font \"Times New Roman,15\"")
   (send *gp* :command "set tics font \"Times New Roman,15\"")
@@ -693,8 +693,8 @@
 
   (send *gp* :command "set lmargin 8")
 
-  (graph-view (list low-sgain-act-dcmz-list high-sgain-act-dcmz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "" :graph-fname "different-servo-gain-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
-  (graph-view (list low-sgain-act-l-fz-list high-sgain-act-l-fz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-fz-comparison.eps" :ylabel "fz [N]")
+  (graph-view (list low-sgain-act-dcmz-list high-sgain-act-dcmz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
+  (graph-view (list low-sgain-act-l-fz-list high-sgain-act-l-fz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-fz-comparison.eps" :ylabel "Foot force z [N]")
 
   ;; (plot-joint-data :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :add-key-name "low sgain"
   ;;                  :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-servo-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
