@@ -676,14 +676,14 @@
     (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-200msec_rev3-25_60Vcap_25PE_postq-eefmqp_0delay-xg-dxg_L5,30,10,1,0.5,0.1-70,70,50,10,1,3_S5,30,10,5,0.5,0.1-70,70,50,40,1,5_100CM_20000P_5000L_1Lz_10f_20n_200nz_JAXON_BLUE_2018_04-24_21-28_41"))
     (setq *high-sgain-rs-list* (copy-object *rs-list*)))
 
-  ;; (analyze-jump-motion :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
-  ;; (setq low-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
-  ;;       low-sgain-act-l-fz-list act-l-fz-list)
-  ;; (setq low-stain-tm-list tm-list)
+  (analyze-jump-motion :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 40 :dcm-lpr 0.3)
+  (setq low-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
+        low-sgain-act-l-fz-list act-l-fz-list)
+  (setq low-stain-tm-list tm-list)
 
-  ;; (analyze-jump-motion :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
-  ;; (setq high-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
-  ;;       high-sgain-act-l-fz-list act-l-fz-list)
+  (analyze-jump-motion :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 5 :dcm-lpr 0.3)
+  (setq high-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
+        high-sgain-act-l-fz-list act-l-fz-list)
 
   (send *gp* :command "set size 1,0.5")
   (send *gp* :command "set key right inside")
@@ -693,11 +693,11 @@
 
   (send *gp* :command "set lmargin 8")
 
-  (graph-view (list low-sgain-act-dcmz-list high-sgain-act-dcmz-list) tm-list :keylist '("low sgain" "high sgain") :title "" :dump-graph t :xlabel "" :graph-fname "different-joint-gain-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
-  (graph-view (list low-sgain-act-l-fz-list high-sgain-act-l-fz-list) tm-list :keylist '("low sgain" "high sgain") :title "" :dump-graph t :xlabel "" :graph-fname "different-joint-gain-fz-comparison.eps" :ylabel "fz [N]")
+  (graph-view (list low-sgain-act-dcmz-list high-sgain-act-dcmz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "" :graph-fname "different-servo-gain-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
+  (graph-view (list low-sgain-act-l-fz-list high-sgain-act-l-fz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-fz-comparison.eps" :ylabel "fz [N]")
 
-  (plot-joint-data :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :add-key-name "low sgain"
-                   :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-joint-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
-  (plot-joint-data :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :replot t :add-key-name "high sgain"
-                   :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-joint-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
+  ;; (plot-joint-data :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :add-key-name "low sgain"
+  ;;                  :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-servo-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
+  ;; (plot-joint-data :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :replot t :add-key-name "high sgain"
+  ;;                  :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-servo-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
   )
