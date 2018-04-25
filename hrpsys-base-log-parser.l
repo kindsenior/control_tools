@@ -664,3 +664,40 @@
 
   (graph-view (list pos-act-l-fz-list tq-act-l-fz-list) tm-list :keylist '("Ordinary PD control" "Torque/PD gain shift control") :title "" :dump-graph t :xlabel "" :graph-fname "pos-tq-jump-force-comparison.eps" :ylabel "Foot force z [N]")
   )
+
+(defun plot-different-joint-gain-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
+
+  (unless (boundp '*low-sgain-rs-list*)
+    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-200msec_rev3-25_60Vcap_25PE_postq-eefmqp_0delay-xg-dxg_L5,30,10,1,0.5,0.1-70,70,50,10,1,3_S5,30,10,5,0.5,0.1-70,70,50,20,1,5_100CM_20000P_5000L_1Lz_10f_20n_200nz_gear-sound_JAXON_BLUE_2018_04-24_21-34_27"))
+    (setq *low-sgain-rs-list* (copy-object *rs-list*)))
+
+  (unless (boundp '*high-sgain-rs-list*)
+    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-200msec_rev3-25_60Vcap_25PE_postq-eefmqp_0delay-xg-dxg_L5,30,10,1,0.5,0.1-70,70,50,10,1,3_S5,30,10,5,0.5,0.1-70,70,50,40,1,5_100CM_20000P_5000L_1Lz_10f_20n_200nz_JAXON_BLUE_2018_04-24_21-28_41"))
+    (setq *high-sgain-rs-list* (copy-object *rs-list*)))
+
+  ;; (analyze-jump-motion :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
+  ;; (setq low-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
+  ;;       low-sgain-act-l-fz-list act-l-fz-list)
+  ;; (setq low-stain-tm-list tm-list)
+
+  ;; (analyze-jump-motion :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
+  ;; (setq high-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
+  ;;       high-sgain-act-l-fz-list act-l-fz-list)
+
+  (send *gp* :command "set size 1,0.5")
+  (send *gp* :command "set key right inside")
+  (send *gp* :command "set key font \"Times New Roman,15\"")
+  (send *gp* :command "set tics font \"Times New Roman,15\"")
+  (send *gp* :command "set ytics autofreq")
+
+  (send *gp* :command "set lmargin 8")
+
+  (graph-view (list low-sgain-act-dcmz-list high-sgain-act-dcmz-list) tm-list :keylist '("low sgain" "high sgain") :title "" :dump-graph t :xlabel "" :graph-fname "different-joint-gain-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
+  (graph-view (list low-sgain-act-l-fz-list high-sgain-act-l-fz-list) tm-list :keylist '("low sgain" "high sgain") :title "" :dump-graph t :xlabel "" :graph-fname "different-joint-gain-fz-comparison.eps" :ylabel "fz [N]")
+
+  (plot-joint-data :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :add-key-name "low sgain"
+                   :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-joint-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
+  (plot-joint-data :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :replot t :add-key-name "high sgain"
+                   :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-joint-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
+  )
