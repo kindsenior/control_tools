@@ -499,10 +499,17 @@
   (let* ((common-contact-limbs (intersection prev-contact-limbs cur-cuntact-limbs))
          (common-contact-coords (mapcar #'(lambda (limb) (elt prev-contact-coords (position limb prev-contact-limbs))) common-contact-limbs))
          (common-contact-tf (mapcar #'(lambda (limb prev-coord) (send prev-coord :transformation (send robot limb :end-coords) :world)) common-contact-limbs common-contact-coords)))
+
+    ;; (cond
+    ;;  ((= (length common-contact-limbs) 1) (send robot :fix-leg-to-coords (car common-contact-coords) (car common-contact-limbs)))
+    ;;  (t (send robot :fix-leg-to-coords (apply #'midcoords 0.5 common-contact-coords) :both)))
+    ;; ;; (send robot :translate (scale (/ 1.0 (length common-contact-tf)) (apply #'v+ #f(0 0 0) (mapcar #'(lambda (tf) (send tf :pos)) common-contact-tf))) :world);; use only pos
+
     (cond
-     ((= (length common-contact-limbs) 1) (send robot :fix-leg-to-coords (car common-contact-coords) (car common-contact-limbs)))
-     (t (send robot :fix-leg-to-coords (apply #'midcoords 0.5 common-contact-coords) :both)))
-    ;; (send robot :translate (scale (/ 1.0 (length common-contact-tf)) (apply #'v+ #f(0 0 0) (mapcar #'(lambda (tf) (send tf :pos)) common-contact-tf))) :world);; use only pos
+     ((= (length common-contact-limbs) 1)
+      (send robot :translate (v- (send (car common-contact-coords) :worldpos) (send (send robot (car common-contact-limbs) :end-coords :copy-worldcoords) :worldpos)) :world))
+     (t
+      (send robot :translate (v- (send (apply #'midcoords 0.5 common-contact-coords) :worldpos) (send (apply #'midcoords 0.5 (send robot :legs :end-coords :copy-worldcoords)) :worldpos)) :world)))
     ))
 
 (defun set-contact-link-drawing (robot contact-limbs &key (color) (contact-opacity) (float-opacity))
@@ -517,6 +524,7 @@
         (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
         (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
+    (warn "analyze-jump-motion~%")
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
     ;; (send *gp* :command "set size 2,1.5")
