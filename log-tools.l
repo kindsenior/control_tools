@@ -484,6 +484,18 @@
      )
   ))
 
+(defun create-ref-com-robot (&key (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)))
+  (unless (boundp '*ref-robot*)
+    (setq *ref-robot* (instance (class *robot*) :init))
+    (send-all (send-all (flatten (send-all (send *ref-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color ref-color 0.3)
+    (send-all (send-all (flatten (send-all (send *robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color act-color 0.3)
+    ;; (objects (list *robot* *ref-robot*))
+    )
+  (unless (boundp '*com-robot*)
+    (setq *com-robot* (instance (class *robot*) :init))
+    (send-all (send-all (flatten (send-all (send *com-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color com-color 0.3))
+  )
+
 (defun get-contact-state-list (rs &key (fz-thresh 20) (frame) &allow-other-keys)
   (cond
    ((equal frame :ref) (mapcar #'(lambda (state-int) (= state-int 1)) (concatenate cons (send rs :get :auto-balancer-contact-states))))
@@ -534,15 +546,7 @@
     (setq tm-list nil
           ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil)
 
-    (unless (boundp '*ref-robot*)
-      (setq *ref-robot* (instance (class *robot*) :init))
-      (send-all (send-all (flatten (send-all (send *ref-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color ref-color 0.3)
-      (send-all (send-all (flatten (send-all (send *robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color act-color 0.3)
-      ;; (objects (list *robot* *ref-robot*))
-      )
-    (unless (boundp '*com-robot*)
-      (setq *com-robot* (instance (class *robot*) :init))
-      (send-all (send-all (flatten (send-all (send *com-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color com-color 0.3))
+    (create-ref-com-robot :ref-color ref-color :com-color com-color :act-color act-color)
     (cond
      ((equal model-mode :ref-act) (objects (list *ref-robot* *robot*)))
      ((equal model-mode :com-act) (objects (list *com-robot* *robot*)))

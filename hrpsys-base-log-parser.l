@@ -573,6 +573,7 @@
     ))
 
 (defun plot-different-mass-jump-comparison ()
+  (create-ref-com-robot)
   (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
 
   (unless (boundp '*correct-mass-rs-list*)
@@ -666,6 +667,7 @@
   )
 
 (defun plot-different-joint-gain-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (create-ref-com-robot)
   (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
 
   (unless (boundp '*low-sgain-rs-list*)
