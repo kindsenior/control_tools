@@ -409,7 +409,7 @@
          )
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
-    (send *gp* :command "set size 2,1.5")
+    ;; (send *gp* :command "set size 2,1.5")
     (send *gp* :command "set key below")
     (send *gp* :command "set key font \"Times New Roman,15\"")
 
@@ -594,7 +594,7 @@
   ;;       incorrect-mass-act-l-fz-list act-l-fz-list)
 
   (send *gp* :command "set size 1,0.5")
-  (send *gp* :command "set key right inside")
+  (send *gp* :command "set key outside center top horizontal reverse Left")
   (send *gp* :command "set key font \"Times New Roman,15\"")
   (send *gp* :command "set tics font \"Times New Roman,15\"")
   (send *gp* :command "set ytics autofreq")
@@ -648,20 +648,21 @@
     (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-200msec_postq_calc-extforce-only-onground_0dxgfz_0.1delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_JAXON_BLUE_2018_02-28_23-25_20")
     (setq *tq-rs-list* (copy-object *rs-list*)))
 
-  (analyze-jump-motion :rs-list *pos-rs-list* :start-tm 1 :stop-tm 5 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
+  (analyze-jump-motion :rs-list *pos-rs-list* :start-tm 1.5 :stop-tm 3 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
   (setq pos-act-l-fz-list act-l-fz-list)
   (setq correct-tm-list tm-list)
 
-  (analyze-jump-motion :rs-list *tq-rs-list* :start-tm 1.5 :stop-tm 5.5 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
+  (analyze-jump-motion :rs-list *tq-rs-list* :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
   (setq tq-act-l-fz-list act-l-fz-list)
 
   (send *gp* :command "set size 1,0.5")
-  (send *gp* :command "set key right inside")
-  (send *gp* :command "set key font \"Times New Roman,15\"")
+  (send *gp* :command "set key outside center top horizontal reverse Left")
+  (send *gp* :command "set key font \"Times New Roman,12\"")
   (send *gp* :command "set tics font \"Times New Roman,15\"")
   (send *gp* :command "set ytics autofreq")
   (send *gp* :command "set lmargin 8")
-  (send *gp* :command "set yrange [-100:500]")
+  (send *gp* :command "set ylabel offset 2")
+  (send *gp* :command "set yrange [-100:1000]")
 
   (graph-view (list pos-act-l-fz-list tq-act-l-fz-list) tm-list :keylist '("Ordinary PD control" "Torque/PD gain shift control") :title "" :dump-graph t :xlabel "" :graph-fname "pos-tq-jump-force-comparison.eps" :ylabel "Foot force z [N]")
   )
@@ -688,15 +689,15 @@
         high-sgain-act-l-fz-list act-l-fz-list)
 
   (send *gp* :command "set size 1,0.6")
-  (send *gp* :command "set key right inside")
+  (send *gp* :command "set key outside center top horizontal reverse Left")
   (send *gp* :command "set key font \"Times New Roman,15\"")
   (send *gp* :command "set tics font \"Times New Roman,15\"")
   (send *gp* :command "set ytics autofreq")
 
   (send *gp* :command "set lmargin 8")
 
-  (graph-view (list low-sgain-act-dcmz-list high-sgain-act-dcmz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
-  (graph-view (list low-sgain-act-l-fz-list high-sgain-act-l-fz-list) tm-list :keylist '("Low takeoff dgain" "Dynamic servo gain shift control") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-fz-comparison.eps" :ylabel "Foot force z [N]")
+  (graph-view (list low-sgain-act-dcmz-list high-sgain-act-dcmz-list) tm-list :keylist '("Low takeoff Dgain" "Dynamic servo gain shift") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
+  (graph-view (list low-sgain-act-l-fz-list high-sgain-act-l-fz-list) tm-list :keylist '("Low takeoff Dgain" "Dynamic servo gain shift") :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-servo-gain-fz-comparison.eps" :ylabel "Foot force z [N]")
 
   ;; (plot-joint-data :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :add-key-name "low sgain"
   ;;                  :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-servo-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
