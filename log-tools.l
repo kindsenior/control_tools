@@ -75,7 +75,7 @@
         (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a/~a.log" user-name machine-name path fname)))
     )))
 
-(defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (save-shm-log nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
+(defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (save-shm-log nil) (ask-to-save-shm-log t) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
   ;; デフォルトログファイル名
   (if (not fname)
       (if (boundp '*__fname__*)
@@ -90,7 +90,7 @@
 
   (cond
    ( (equal type :old) (save-log-old fname) )
-   ( (equal type :new) (setq fname (save-log-new fname parse-flg log-dir save-shm-log)) )
+   ( (equal type :new) (setq fname (save-log-new fname parse-flg log-dir save-shm-log ask-to-save-shm-log)) )
    )
   fname
   )
@@ -126,8 +126,8 @@
     (send *ci* :start-log) ))
 
 ;; 新システム
-(defun save-log-new (fname parse-flg log-dir save-shm-log)
-  (let ( machine-name raw-date date path fstream uname (org-fname "test") (eof (gensym)) )
+(defun save-log-new (fname parse-flg log-dir save-shm-log ask-to-save-shm-log)
+  (let ( machine-name raw-date date path fstream uname (org-fname "test") (eof (gensym)) shm-log-saved )
 
     ;; 日付追加
     (setq date (get-date-string))
@@ -136,7 +136,8 @@
     (while (not (send (send *ri* :save-log (format nil "/tmp/~a" org-fname) :set-robot-date-string nil) :operation_return)) (warn "do :save-log"))
 
     ;; save shm log (do not scp and copy at the same time with hrpsys log files)
-    (when (or save-shm-log (is-servo-off :print t)) (save-shm-log :log-dir log-dir :scp nil))
+    (when (setq shm-log-saved (or save-shm-log (and (is-servo-off :print t) (or (not ask-to-save-shm-log) (y-or-n-p "Save shm log?")))))
+      (save-shm-log :log-dir log-dir :scp nil))
 
     (setq fname (read-line (piped-fork (format nil "zenity --entry --title \"ファイル名\" --text=\"ログファイルの保存名\" --entry-text=\"~s\"" fname)) nil eof))
     (if (eq eof fname)
@@ -175,7 +176,7 @@
             ( t (warning-message 1 "cannot use save-log in this robot~%") )
             )
            (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/" org-fname "* " path))
-           (when (or save-shm-log (is-servo-off)) (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/shm.log " path "/"org-fname ".log")))
+           (when shm-log-saved (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/shm.log " path "/"org-fname ".log")))
            )
          )
         (unix:system (concatenate string "find " path "| rename 's/" org-fname "/" fname "/'"))
