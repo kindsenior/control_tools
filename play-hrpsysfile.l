@@ -301,7 +301,7 @@
           (when save-log
             (warn "sleep ~a[sec] during motion~%" sleep-time)
             (unix:sleep sleep-time)
-            (save-log :add-fname add-fname))
+            (save-log :add-fname add-fname :save-shm-log save-shm-log))
           ))
     (warning-message 1 "Please release emergency~%")
     )

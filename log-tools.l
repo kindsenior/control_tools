@@ -156,7 +156,7 @@
 
         ;; コピー
         (cond
-         ( (is-simulation) 
+         ( (is-simulation)
            ;; (setq uname (unix:getenv "USER")
            ;; 			 cp-command "cp"
            ;; 			 machine-name (unix:system "uname -n"))
@@ -508,8 +508,8 @@
 (defun get-contact-coords (robot contact-limbs)
   (mapcar #'(lambda (limb) (send robot limb :end-coords :copy-worldcoords)) contact-limbs))
 
-(defun move-by-foot-step (robot prev-contact-coords prev-contact-limbs cur-cuntact-limbs)
-  (let* ((common-contact-limbs (intersection prev-contact-limbs cur-cuntact-limbs))
+(defun move-by-foot-step (robot prev-contact-coords prev-contact-limbs cur-contact-limbs)
+  (let* ((common-contact-limbs (intersection prev-contact-limbs cur-contact-limbs))
          (common-contact-coords (mapcar #'(lambda (limb) (elt prev-contact-coords (position limb prev-contact-limbs))) common-contact-limbs))
          (common-contact-tf (mapcar #'(lambda (limb prev-coord) (send prev-coord :transformation (send robot limb :end-coords) :world)) common-contact-limbs common-contact-coords)))
 
@@ -675,8 +675,10 @@
      (incf idx step)
      )
 
+    (warning-message 3 "Stopped at ~a sec (~a)~%" (send rs :time) idx)
+
     (unless repeat
-      (let ((pos-scale 10) (vel-scale 0.1) (acc-scale 100))
+      (let ((pos-scale 10) (vel-scale 0.5) (acc-scale 100))
         (send *gp* :command "set ytics 100")
         (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
               ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
