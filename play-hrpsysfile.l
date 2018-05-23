@@ -626,6 +626,33 @@
     )
   )
 
+(defun slip-through-demo (&key (turn 1))
+  (let ( (fname "_slip-through-right-200step-len-8step-low-waist-tilt") (sample-name "ShuffleSample") (local-path))
+    (setq local-path (concatenate string (ros::resolve-ros-path "package://jsk_choreonoid") "sample/" sample-name "/"))
+
+    (setq *__fname__* (reg-replace* "^_" "" fname));; _fname->fname
+    (setq motion-time (get-motion-time local-path *__fname__*))
+
+    (prepare-experiment)
+    (setq *__fname__* (reg-replace* "^_" "" fname))
+    (init-pose :fname *__fname__* :sample-name sample-name :real t :wait t :tm 5)
+
+    (warning-message 3 "Push y to start or n to resign~%")
+    (when (y-or-n-p)
+      (send *ri* :start-log)
+      (dotimes (i turn)
+        ;; (play-hrpsysfile :fname fname :sample-name sample-name :st-algorithm :eefmqpcop2 :save-log nil :tm 0.5 :prepare nil :wait-key nil)
+        ;; (play-hrpsysfile :fname fname :sample-name sample-name :st-algorithm :eefmqpcop2 :save-log nil :tm 2 :prepare nil :wait-key nil)
+        (if (= i 0) (setq tm 0.5) (setq tm 5))
+        (play-hrpsysfile :fname fname :sample-name sample-name :st-algorithm :eefmqpcop2 :save-log nil :tm tm :prepare nil :wait-key nil)
+        (unix:sleep (round motion-time)))
+      (unix:sleep 2)
+      ;; (send *ri* :stop-st)
+      (reset-pose :tm 15)
+      (save-log :fname (format nil "slip-through-demo_~aturn_~a" turn fname))
+      )
+    ))
+
 (defun init-play-hrpsysfile()
   (unless (is-simulation)
     (when (not (boundp '*servo-state-msg*))
