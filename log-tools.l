@@ -530,10 +530,10 @@
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) contact-limbs) :get-val 'geometry::bodies)) :glvertices) :set-color color contact-opacity))
 
 (defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz")) (save nil)
-                                 (dt 0.002) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (min-jump-time 0.05)
+                                 (dt 0.002) (advance-tm 0.04) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (min-jump-time 0.05)
                                  (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act) (dcm-lpr 0.4)
                                  )
-  (let ((idx) (rs) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
+  (let ((idx) (rs) (advance-rs) (advance-idx (round (/ advance-tm dt))) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil)
         (ref-root-pos-list nil) (ref-root-vel-list nil)
         (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
@@ -559,7 +559,8 @@
     (setq idx start-idx)
     (do-until-key-with-check
      (progn (if (< idx stop-idx) t (if repeat (progn (setq idx start-idx) t) nil)))
-     (setq rs (elt rs-list idx))
+     (setq rs (elt rs-list idx)
+           advance-rs (elt rs-list (+ idx advance-idx)))
      (push-back (send rs :time) tm-list)
 
      ;; initial procedure
@@ -580,7 +581,7 @@
        (setq last-ref-root-pos (send (send (car (send *ref-robot* :links)) :copy-worldcoords) :worldpos))
 
        (setq last-cm (copy-object (send *robot* :centroid)))
-       (setq prev-act-contact-limbs (get-contact-limbs (car rs-list) :fz-thresh fz-thresh :frame :act))
+       (setq prev-act-contact-limbs (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act))
        (setq prev-act-contact-coords (list (make-coords) (make-coords)))
 
        (setq ref-dcm-list nil act-dcm-list nil ref-cm-list nil act-cm-list nil
@@ -607,7 +608,7 @@
      ;; set fz-thresh (need to modify)
      (if (and takeoff-idx (> idx (+ takeoff-idx (/ min-jump-time dt)))) (setq fz-thresh landing-fz-thresh) (setq fz-thresh takeoff-fz-thresh));; takeoff-idx is nil during support phase
 
-     (if (and (> (length (setq act-contact-limbs (get-contact-limbs rs :fz-thresh fz-thresh :frame :act))) 0) (> (length prev-act-contact-limbs) 0))
+     (if (and (> (length (setq act-contact-limbs (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act))) 0) (> (length prev-act-contact-limbs) 0))
          (progn ;; supporting phase
            (send *robot* :angle-vector (send rs :angle-vector))
            (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)));; for setting orientation
@@ -643,7 +644,7 @@
          (setq last-cm (car (last act-cm-list)))
          (setq last-dcm (car (last act-dcm-list)))
 
-         (setq prev-act-contact-limbs (get-contact-limbs rs :fz-thresh fz-thresh :frame :act))
+         (setq prev-act-contact-limbs (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act))
          (setq prev-act-contact-coords (get-contact-coords *robot* prev-act-contact-limbs))
          )
        )
@@ -658,8 +659,8 @@
       ((equal root-mode :ref2act) (send *ref-robot* :translate (v- (send (car (send *robot* :links)) :worldpos) (send (car (send *ref-robot* :links)) :worldpos)) :world))
       ((equal root-mode :act2ref) (send *robot* :translate (v- (send (car (send *ref-robot* :links)) :worldpos) (send (car (send *robot* :links)) :worldpos)) :world)))
 
-     (set-contact-link-drawing *ref-robot* (get-contact-limbs rs :fz-thresh fz-thresh :frame :ref) :color ref-color :contact-opacity contact-opacity :float-opacity float-opacity)
-     (set-contact-link-drawing *robot*     (get-contact-limbs rs :fz-thresh fz-thresh :frame :act) :color act-color :contact-opacity contact-opacity :float-opacity float-opacity)
+     (set-contact-link-drawing *ref-robot* (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :ref) :color ref-color :contact-opacity contact-opacity :float-opacity float-opacity)
+     (set-contact-link-drawing *robot*     (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act) :color act-color :contact-opacity contact-opacity :float-opacity float-opacity)
 
      (send (send rs :get :auto-balancer-reference-root-coords) :draw-on :flush t)
 
