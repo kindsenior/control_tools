@@ -497,6 +497,31 @@
     (send-all (send-all (flatten (send-all (send *com-robot* :links) :get-val 'geometry::bodies)) :glvertices) :set-color com-color 0.3))
   )
 
+(defun get-nearest-point (target-point target-face)
+  (car (sort (remove target-face
+                     (append (mapcar #'(lambda (e) (send e :point (send e :foot target-point))) (send target-face :edges)) (send target-face :vertices))
+                     :test #'(lambda (f p) (eq (send f :insidep p) :outside)))
+             #'(lambda (p0 p1) (<= (distance p0 target-point) (distance p1 target-point))))))
+
+(defun truncate-point-to-face (target-point target-face)
+  (if (eq (send target-face :insidep target-point) :inside)
+      target-point
+    (get-nearest-point target-point target-face)))
+
+(defun get-cop (rs limb &optional (wrt :world) &key (robot *robot*) (fz-thre))
+  (let ((cop (send robot :calc-cop-from-force-moment
+                    (send rs :get (read-from-string (format nil "~A-force-vector" limb)))
+                    (send rs :get (read-from-string (format nil "~A-moment-vector" limb)))
+                    (car (send robot limb :force-sensors)) (send robot limb :end-coords) :fz-thre fz-thre)))
+    (if cop
+        (setq cop (truncate-point-to-face cop (find limb (send robot :support-polygons) :test #'(lambda (limb face) (eq limb (send face :name))))))
+      (setq cop (send (send *robot* limb :end-coords) :worldpos)))
+    (cond
+     ((eq wrt :world) cop)
+     ((eq wrt :local) (send (send robot limb :end-coords) :inverse-transform-vector cop))
+     (t (assert "wrt type error~%")))
+    ))
+
 (defun get-contact-state-list (rs &key (fz-thresh 20) (frame) &allow-other-keys)
   (cond
    ((equal frame :ref) (mapcar #'(lambda (state-int) (= state-int 1)) (concatenate cons (send rs :get :auto-balancer-contact-states))))
@@ -508,8 +533,10 @@
 (defun get-contact-coords (robot contact-limbs)
   (mapcar #'(lambda (limb) (send robot limb :end-coords :copy-worldcoords)) contact-limbs))
 
-(defun move-by-foot-step (robot prev-contact-coords prev-contact-limbs cur-contact-limbs)
-  (let* ((common-contact-limbs (intersection prev-contact-limbs cur-contact-limbs))
+(defun move-by-foot-step (robot prev-contact-coords prev-contact-limbs cur-contact-limbs &key (cop))
+  (let* ((local-offsets (if cop cop (mapcar #'(lambda (val) #f(0 0 0)) prev-contact-limbs)))
+         (common-contact-limbs (intersection prev-contact-limbs cur-contact-limbs))
+         (common-contact-offsets (mapcar #'(lambda (limb) (elt local-offsets (position limb prev-contact-limbs))) common-contact-limbs))
          (common-contact-coords (mapcar #'(lambda (limb) (elt prev-contact-coords (position limb prev-contact-limbs))) common-contact-limbs))
          (common-contact-tf (mapcar #'(lambda (limb prev-coord) (send prev-coord :transformation (send robot limb :end-coords) :world)) common-contact-limbs common-contact-coords)))
 
@@ -520,9 +547,10 @@
 
     (cond
      ((= (length common-contact-limbs) 1)
-      (send robot :translate (v- (send (car common-contact-coords) :worldpos) (send (send robot (car common-contact-limbs) :end-coords :copy-worldcoords) :worldpos)) :world))
+      (send robot :translate (v- (send (send (car common-contact-coords) :translate (car common-contact-offsets)) :worldpos) (send (send (send robot (car common-contact-limbs) :end-coords :copy-worldcoords) :translate (car common-contact-offsets)) :worldpos)) :world))
      (t
-      (send robot :translate (v- (send (apply #'midcoords 0.5 common-contact-coords) :worldpos) (send (apply #'midcoords 0.5 (send robot :legs :end-coords :copy-worldcoords)) :worldpos)) :world)))
+      (send robot :translate (v- (send (apply #'midcoords 0.5 (mapcar #'(lambda (ccoord coffset) (send ccoord :translate coffset)) common-contact-coords common-contact-offsets)) :worldpos)
+                                 (send (apply #'midcoords 0.5 (mapcar #'(lambda (ccoord coffset) (send ccoord :translate coffset)) (send robot :legs :end-coords :copy-worldcoords) common-contact-offsets)) :worldpos)) :world)))
     ))
 
 (defun set-contact-link-drawing (robot contact-limbs &key (color) (contact-opacity) (float-opacity))
@@ -612,7 +640,7 @@
          (progn ;; supporting phase
            (send *robot* :angle-vector (send rs :angle-vector))
            (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)));; for setting orientation
-           (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
+           (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs :cop (mapcar #'(lambda (limb) (get-cop advance-rs limb :local :fz-thre fz-thresh)) prev-act-contact-limbs))
            (send *com-robot* :angle-vector (send rs :reference-angle-vector))
            (send *com-robot* :move-coords (make-coords :rpy (map float-vector #'deg2rad (send (elt *rs-list* 1000) :get :stabilizer-current-base-rpy))) (car (send *com-robot* :links)))
            (move-by-foot-step *com-robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
