@@ -561,7 +561,7 @@
                                  (dt 0.002) (advance-tm 0.04) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (min-jump-time 0.05)
                                  (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act) (dcm-lpr 0.4)
                                  )
-  (let ((idx) (rs) (advance-rs) (advance-idx (round (/ advance-tm dt))) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
+  (let ((idx) (rs) (advance-rs) (advance-idx (round (/ advance-tm (* dt step)))) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil)
         (ref-root-pos-list nil) (ref-root-vel-list nil)
         (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
