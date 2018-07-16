@@ -563,8 +563,8 @@
                                  )
   (let ((idx) (rs) (advance-rs) (advance-idx (round (/ advance-tm (* dt step)))) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil)
-        (ref-root-pos-list nil) (ref-root-vel-list nil)
-        (ref-lfoot-pos-list nil) (act-lfoot-pos-list nil) (act-root-accel-list nil)
+        ref-root-pos-list ref-root-vel-list
+        ref-lfoot-pos-list act-lfoot-pos-list ref-lfoot-rot-list act-lfoot-rot-list act-root-accel-list
         (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
     (warn "analyze-jump-motion~%")
@@ -613,8 +613,9 @@
        (setq prev-act-contact-coords (list (make-coords) (make-coords)))
 
        (setq ref-dcm-list nil act-dcm-list nil ref-cm-list nil act-cm-list nil
+             ref-root-pos-list nil ref-root-vel-list nil
              ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil
-             ref-lfoot-pos-list nil act-lfoot-pos-list nil
+             ref-lfoot-pos-list nil act-lfoot-pos-list nil ref-lfoot-rot-list nil act-lfoot-rot-list nil
              act-root-accel-list nil)
        )
 
@@ -678,7 +679,9 @@
        )
 
      (push-back (send (send *ref-robot* :lleg :end-coords :copy-worldcoords) :worldpos) ref-lfoot-pos-list)
+     (push-back (send (send *ref-robot* :lleg :end-coords :copy-worldcoords) :worldrot) ref-lfoot-rot-list)
      (push-back (send (send *robot*     :lleg :end-coords :copy-worldcoords) :worldpos) act-lfoot-pos-list)
+     (push-back (send (send *robot*     :lleg :end-coords :copy-worldcoords) :worldrot) act-lfoot-rot-list)
 
      ;; (cond
      ;;  ((equal root-mode :ref2act) (send *ref-robot* :move-coords (send (car (send *robot* :links)) :worldcoords) (car (send *ref-robot* :links))))
@@ -709,7 +712,7 @@
     (warning-message 3 "Stopped at ~a sec (~a)~%" (send rs :time) idx)
 
     (unless repeat
-      (let ((pos-scale 10) (vel-scale 0.5) (acc-scale 100))
+      (let ((pos-scale 10) (vel-scale 0.5) (acc-scale 100) (rot-scale 10))
         (send *gp* :command "set ytics 100")
         (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
               ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
@@ -721,15 +724,17 @@
               act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
               act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) vel-scale)) act-dcm-list)
               act-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) pos-scale)) act-lfoot-pos-list)
-              act-root-accel-z-list (mapcar #'(lambda (accel) (* (elt accel 2) acc-scale)) act-root-accel-list))
+              act-root-accel-z-list (mapcar #'(lambda (accel) (* (elt accel 2) acc-scale)) act-root-accel-list)
+              ref-lfoot-y-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) ref-lfoot-rot-list)
+              act-lfoot-y-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) act-lfoot-rot-list))
 
         (graph-view
          ;; (list ref-cmz-list act-cmz-list)
          (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list
-               ref-lfoot-z-list act-lfoot-z-list act-root-accel-z-list)
+               ref-lfoot-z-list act-lfoot-z-list act-root-accel-z-list ref-lfoot-y-list act-lfoot-y-list)
          tm-list
          :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz"
-                        "Reference lz" "Actual lz" "Actual root accel z")
+                        "Reference lz" "Actual lz" "Actual root accel z" "Reference lp" "Actual lp")
          :title fname
          :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
          :dump-graph save
