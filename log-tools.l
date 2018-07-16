@@ -566,6 +566,8 @@
         (ref-dcm-list nil) (act-dcm-list nil) (ref-cm-list nil) (act-cm-list nil)
         ref-root-pos-list ref-root-vel-list
         ref-lfoot-pos-list act-lfoot-pos-list ref-lfoot-rot-list act-lfoot-rot-list act-root-accel-list
+        ref-L-list act-L-list
+        (prev-act-robot-state-list)
         (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)) (contact-opacity 0.8) (float-opacity 0.3)
         (g-vec #f(0 0 -9800)) (time-step (* dt step)))
     (warn "analyze-jump-motion~%")
@@ -597,6 +599,11 @@
      (when (= idx start-idx)
        (send *robot* :angle-vector (send rs :angle-vector))
        (send *robot* :fix-leg-to-coords (make-coords))
+       (let ((rsd (instance robot-state-data)))
+         (send rsd :set-val 'angle-vector (send *robot* :angle-vector))
+         (send rsd :set-val 'root-coords  (send (car (send *robot* :links)) :worldcoords :copy-worldcoords))
+         (dotimes (i 3) (push-back rsd prev-act-robot-state-list)))
+
        ;; (send *robot* :reset-coords)
        ;; (send *ref-robot* :reset-coords)
        (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
@@ -618,18 +625,22 @@
              ref-root-pos-list nil ref-root-vel-list nil
              ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil
              ref-lfoot-pos-list nil act-lfoot-pos-list nil ref-lfoot-rot-list nil act-lfoot-rot-list nil
-             act-root-accel-list nil)
+             act-root-accel-list nil
+             ref-L-list nil act-L-list nil)
        )
 
      ;; procedure for getting reference data
      (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
-     (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links))) ;; root height 0 during go-pos
-     (send *ref-robot* :transform abc-offset-tf :world)
+     (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
      ;; (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
      ;; (send *ref-robot* :move-coords (send (send (send rs :get :auto-balancer-reference-root-coords) :copy-worldcoords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
      (push-back (copy-object (send *ref-robot* :centroid)) ref-cm-list)
      (push-back (scale (/ 1.0 time-step) (v- (car (last ref-cm-list)) ref-last-cm)) ref-dcm-list)
      (setq ref-last-cm (car (last ref-cm-list)))
+
+     (send *ref-robot* :calc-torque :dt time-step :calc-statics-p nil)
+     (push-back (v- (reduce #'v+ (send-all (send *ref-robot* :links) :get-val 'angular-momentum))
+                    (scale (* 1e-3 (send *ref-robot* :weight)) (v* (scale 1e-3 (car (last ref-cm-list))) (scale 1e-3 (car (last ref-dcm-list)))))) ref-L-list)
 
      (push-back (send (send (car (send *ref-robot* :links)) :copy-worldcoords) :worldpos) ref-root-pos-list)
      (push-back (scale (/ 1.0 time-step) (v- (car (last ref-root-pos-list)) last-ref-root-pos)) ref-root-vel-list)
@@ -685,6 +696,24 @@
      (push-back (send (send *robot*     :lleg :end-coords :copy-worldcoords) :worldpos) act-lfoot-pos-list)
      (push-back (send (send *robot*     :lleg :end-coords :copy-worldcoords) :worldrot) act-lfoot-rot-list)
 
+     ;; add new robot-state and remove old robot-state
+     (let ((rsd (instance robot-state-data)))
+       (send rsd :set-val 'angle-vector (send *robot* :angle-vector))
+       (send rsd :set-val 'root-coords  (send (car (send *robot* :links)) :worldcoords :copy-worldcoords))
+       (push-back (copy-object rsd) prev-act-robot-state-list)
+       (pop prev-act-robot-state-list))
+
+     ;; set recent 3 poses
+     (dolist (act-rs prev-act-robot-state-list)
+       (send *robot* :angle-vector (send act-rs :angle-vector))
+       (send *robot* :move-coords  (send act-rs :root-coords) (car (send *robot* :links))))
+
+     (send *robot* :calc-torque :dt time-step :calc-statics-p nil)
+     (push-back (v- (reduce #'v+ (send-all (send *robot* :links) :get-val 'angular-momentum))
+                    ;; (scale (* 1e-3 (send *robot* :weight)) (v* (scale 1e-3 (car (last act-cm-list))) (scale 1e-3 (car (last act-dcm-list)))))) act-L-list)
+                    (scale (* 1e-3 (send *robot* :weight)) (v* (scale 1e-3 (car (last ref-cm-list))) (scale 1e-3 (car (last ref-dcm-list)))))) act-L-list);; use ref cm,dcm
+
+     ;; overwrite root position
      ;; (cond
      ;;  ((equal root-mode :ref2act) (send *ref-robot* :move-coords (send (car (send *robot* :links)) :worldcoords) (car (send *ref-robot* :links))))
      ;;  ((equal root-mode :act2ref) (send *robot* :move-coords (send (car (send *ref-robot* :links)) :worldcoords) (car (send *robot* :links)))))
@@ -714,7 +743,7 @@
     (warning-message 3 "Stopped at ~a sec (~a)~%" (send rs :time) idx)
 
     (unless repeat
-      (let ((pos-scale 10) (vel-scale 0.5) (acc-scale 100) (rot-scale 10))
+      (let ((pos-scale 10) (vel-scale 0.5) (acc-scale 100) (rot-scale 10) (Lscale 10))
         (send *gp* :command "set ytics 100")
         (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
               ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
@@ -728,15 +757,17 @@
               act-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) pos-scale)) act-lfoot-pos-list)
               act-root-accel-z-list (mapcar #'(lambda (accel) (* (elt accel 2) acc-scale)) act-root-accel-list)
               ref-lfoot-y-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) ref-lfoot-rot-list)
-              act-lfoot-y-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) act-lfoot-rot-list))
+              act-lfoot-y-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) act-lfoot-rot-list)
+              ref-Ly-list (mapcar #'(lambda (angular-momentum) (* (elt angular-momentum 1) Lscale)) ref-L-list)
+              act-Ly-list (mapcar #'(lambda (angular-momentum) (* (elt angular-momentum 1) Lscale)) act-L-list))
 
         (graph-view
          ;; (list ref-cmz-list act-cmz-list)
          (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list
-               ref-lfoot-z-list act-lfoot-z-list act-root-accel-z-list ref-lfoot-y-list act-lfoot-y-list)
+               ref-lfoot-z-list act-lfoot-z-list act-root-accel-z-list ref-lfoot-y-list act-lfoot-y-list ref-Ly-list act-Ly-list)
          tm-list
          :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz"
-                        "Reference lz" "Actual lz" "Actual root accel z" "Reference lp" "Actual lp")
+                        "Reference lz" "Actual lz" "Actual root accel z" "Reference lp" "Actual lp" "Reference Ly" "Actual Ly")
          :title fname
          :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
          :dump-graph save
