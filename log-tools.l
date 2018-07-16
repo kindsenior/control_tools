@@ -557,7 +557,8 @@
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) '(:lleg :rleg :larm :rarm)) :get-val 'geometry::bodies)) :glvertices) :set-color color float-opacity)
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) contact-limbs) :get-val 'geometry::bodies)) :glvertices) :set-color color contact-opacity))
 
-(defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (repeat nil) (add-fname nil) (fname (format nil "cmz")) (save nil)
+(defun analyze-jump-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange '(-600 1000)) (repeat nil)
+                                 (add-fname nil) (fname (format nil "cmz")) (save nil)
                                  (dt 0.002) (advance-tm 0.04) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (min-jump-time 0.05)
                                  (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act) (dcm-lpr 0.4)
                                  )
@@ -573,6 +574,7 @@
     ;; (send *gp* :command "set size 2,1.5")
     (send *gp* :command "set key right inside")
     (send *gp* :command "set key font \"Times New Roman,15\"")
+    (send *gp* :command (format nil "set yrange [~s:~s]" (car yrange) (cadr yrange)))
 
     (setq tm-list nil
           ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil)
