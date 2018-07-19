@@ -597,6 +597,15 @@
 
      ;; initial procedure
      (when (= idx start-idx)
+       (setq ref-dcm-list nil act-dcm-list nil ref-cm-list nil act-cm-list nil
+             ref-root-pos-list nil ref-root-vel-list nil
+             ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil
+             ref-lfoot-pos-list nil act-lfoot-pos-list nil ref-lfoot-rot-list nil act-lfoot-rot-list nil
+             act-root-accel-list nil
+             ref-L-list nil act-L-list nil
+             prev-act-robot-state-list nil)
+
+       ;; initialization for actual robot
        (send *robot* :angle-vector (send rs :angle-vector))
        (send *robot* :fix-leg-to-coords (make-coords))
        (let ((rsd (instance robot-state-data)))
@@ -604,13 +613,19 @@
          (send rsd :set-val 'root-coords  (send (car (send *robot* :links)) :worldcoords :copy-worldcoords))
          (dotimes (i 3) (push-back rsd prev-act-robot-state-list)))
 
+       ;; initialization for reference robot
        ;; (send *robot* :reset-coords)
        ;; (send *ref-robot* :reset-coords)
        (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
        ;; (send *ref-robot* :fix-leg-to-coords (make-coords))
        ;; (setq abc-offset-tf (send (send rs :get :auto-balancer-reference-root-coords) :transformation (send (car (send *ref-robot* :links)) :worldcoords)))
        (send *ref-robot* :move-coords (send rs :get :auto-balancer-reference-root-coords) (car (send *ref-robot* :links)))
-       (setq abc-offset-tf (send (apply #'midcoords 0.5 (send *ref-robot* :legs :end-coords)) :inverse-transformation))
+       (setq abc-offset-tf (send (apply #'midcoords 0.5 (send *ref-robot* :legs :end-coords)) :inverse-transformation));; assume initialpose is both foot contact
+       (dotimes (i 3)
+         (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
+         (send *ref-robot* :move-coords (send (send (send rs :get :auto-balancer-reference-root-coords) :inverse-transformation) :transformation abc-offset-tf) (car (send *ref-robot* :links))))
+
+       ;; initialization for command robot
        (send *com-robot* :angle-vector (send rs :reference-angle-vector))
        (send *com-robot* :fix-leg-to-coords (make-coords))
 
@@ -621,17 +636,11 @@
        (setq prev-act-contact-limbs (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act))
        (setq prev-act-contact-coords (list (make-coords) (make-coords)))
 
-       (setq ref-dcm-list nil act-dcm-list nil ref-cm-list nil act-cm-list nil
-             ref-root-pos-list nil ref-root-vel-list nil
-             ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil
-             ref-lfoot-pos-list nil act-lfoot-pos-list nil ref-lfoot-rot-list nil act-lfoot-rot-list nil
-             act-root-accel-list nil
-             ref-L-list nil act-L-list nil)
        )
 
      ;; procedure for getting reference data
      (send *ref-robot* :angle-vector (send rs :get :auto-balancer-reference-vector))
-     (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
+     (send *ref-robot* :move-coords (send (send (send rs :get :auto-balancer-reference-root-coords) :inverse-transformation) :transformation abc-offset-tf) (car (send *ref-robot* :links)))
      ;; (send *ref-robot* :move-coords (send (send rs :get :auto-balancer-reference-root-coords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
      ;; (send *ref-robot* :move-coords (send (send (send rs :get :auto-balancer-reference-root-coords) :copy-worldcoords) :transform abc-offset-tf) (car (send *ref-robot* :links)))
      (push-back (copy-object (send *ref-robot* :centroid)) ref-cm-list)
