@@ -657,7 +657,7 @@
 
      ;; procedure for getting actual data
      ;; set fz-thresh (need to modify)
-     (if (and takeoff-idx (> idx (+ takeoff-idx (/ min-jump-time dt)))) (setq fz-thresh landing-fz-thresh) (setq fz-thresh takeoff-fz-thresh));; takeoff-idx is nil during support phase
+     (if (and takeoff-idx (> idx (+ takeoff-idx (/ min-jump-time time-step)))) (setq fz-thresh landing-fz-thresh) (setq fz-thresh takeoff-fz-thresh));; takeoff-idx is nil during support phase
 
      (if (and (> (length (setq act-contact-limbs (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act))) 0) (> (length prev-act-contact-limbs) 0))
          (progn ;; supporting phase
