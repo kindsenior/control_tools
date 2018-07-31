@@ -666,7 +666,7 @@
   (graph-view (list pos-act-l-fz-list tq-act-l-fz-list) tm-list :keylist '("Ordinary PD control" "Torque/PD gain shift control") :title "" :dump-graph t :xlabel "" :graph-fname "pos-tq-jump-force-comparison.eps" :ylabel "Foot force z [N]")
   )
 
-(defun plot-different-joint-gain-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+(defun plot-different-takeoff-joint-servo-gain-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
   (create-ref-com-robot)
   (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
 
@@ -703,3 +703,77 @@
   ;; (plot-joint-data :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 6 :replot t :add-key-name "high sgain"
   ;;                  :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("different-servo-gain-joint-velocity-comparison") :ylabel-list '("Joint velocity [deg/s]"))
   )
+
+(defun plot-different-landing-joint-servo-gain-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (let ( (common-path (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/comparison/joint-servo-gain_landing-pgain_jump-200msec/")) )
+    (create-ref-com-robot)
+    (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
+
+    (unless (boundp '*0gain-rs-list*)
+      ;; (prepare-plot :fname (concatenate string common-path "jump-200msec_postq-eefmqpcop2_S5,30,20,5,1,5-70,70,50,40,40,5_L5,30,10,5,0.5,5-70,70,50,10,1,5_JAXON_BLUE_2018_07-29_23-40_18"))
+      (prepare-plot :fname (concatenate string common-path "jump-200msec_postq-eefmqpcop2_S5,30,20,5,1,5-70,70,50,40,40,5_L5,30,10,5,0.5,5-70,70,50,10,1,5_backward-fall-after-land_JAXON_BLUE_2018_07-27_17-58_51"))
+      (setq *0gain-rs-list* (copy-object *rs-list*)))
+
+    (unless (boundp '*1gain-rs-list*)
+      (prepare-plot :fname (concatenate string common-path "jump-200msec_postq-eefmqpcop2_S5,30,20,5,1,5-70,70,50,40,40,5_L5,30,10,20,0.5,5-70,70,50,10,1,5_JAXON_BLUE_2018_07-29_23-46_29"))
+      (setq *1gain-rs-list* (copy-object *rs-list*)))
+
+    (unless (boundp '*2gain-rs-list*)
+      (prepare-plot :fname (concatenate string common-path "jump-200msec_postq-eefmqpcop2_S5,30,20,5,1,5-70,70,50,40,40,5_L5,30,10,40,0.5,5-70,70,50,10,1,5_human-support_after-land_JAXON_BLUE_2018_07-29_23-49_27"))
+      (setq *2gain-rs-list* (copy-object *rs-list*)))
+
+    (unless (boundp '*3gain-rs-list*)
+      (prepare-plot :fname (concatenate string common-path "jump-200msec_postq-eefmqpcop2_S5,30,20,5,1,5-70,70,50,40,40,5_L5,30,10,60,0.5,5-70,70,50,10,1,5_human-support-after-land_JAXON_BLUE_2018_07-29_23-52_00"))
+      (setq *3gain-rs-list* (copy-object *rs-list*)))
+
+    (unless (boundp '*4gain-rs-list*)
+      (prepare-plot :fname (concatenate string common-path "jump-200msec_postq-eefmqpcop2_S5,30,20,5,1,5-70,70,50,40,40,5_L5,30,10,80,0.5,5-70,70,50,10,1,5_human-support-after-land_JAXON_BLUE_2018_07-29_23-55_10"))
+      (setq *4gain-rs-list* (copy-object *rs-list*)))
+
+    (unless (boundp '*5gain-rs-list*)
+      (prepare-plot :fname (concatenate string common-path "jump-200msec_postq-eefmqpcop2_S5,30,20,5,1,5-70,70,50,40,40,5_L5,30,10,100,0.5,5-70,70,50,10,1,5_human-support-after-land_JAXON_BLUE_2018_07-29_23-58_37"))
+      (setq *5gain-rs-list* (copy-object *rs-list*)))
+
+
+    ;; (analyze-jump-motion :rs-list *0gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (analyze-jump-motion :rs-list *0gain-rs-list* :start-tm 2.39 :stop-tm 3.19 :step 1)
+    (setq 0gain-act-l-fz-list act-l-fz-list)
+
+    (analyze-jump-motion :rs-list *1gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (setq 1gain-act-l-fz-list act-l-fz-list)
+    (setq common-tm-list tm-list)
+
+    (analyze-jump-motion :rs-list *2gain-rs-list* :start-tm 2.395 :stop-tm 3.195 :step 1)
+    (setq 2gain-act-l-fz-list act-l-fz-list)
+
+    (analyze-jump-motion :rs-list *3gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (setq 3gain-act-l-fz-list act-l-fz-list)
+
+    (analyze-jump-motion :rs-list *4gain-rs-list* :start-tm 2.39 :stop-tm 3.19 :step 1)
+    (setq 4gain-act-l-fz-list act-l-fz-list)
+
+    (analyze-jump-motion :rs-list *5gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (setq 5gain-act-l-fz-list act-l-fz-list)
+
+
+    (send *gp* :command "set size 1,0.6")
+    (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key font \"Times New Roman,15\"")
+    (send *gp* :command "set tics font \"Times New Roman,15\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "unset yrange")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 3")
+
+    (send *gp* :command "set bmargin 2")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set xlabel offset 0,1")
+
+    (send *gp* :command "set tmargin 2.5")
+
+    (graph-view (list 0gain-act-l-fz-list 1gain-act-l-fz-list 2gain-act-l-fz-list 3gain-act-l-fz-list 4gain-act-l-fz-list 5gain-act-l-fz-list)
+                common-tm-list
+                :keylist '("Landing Pgain 5%" "Landing Pgain 20%" "Landing Pgain 40%" "Landing Pgain 60%" "Landing Pgain 80%" "Landing Pgain 100%")
+                :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-landing-servo-gain-fz-comparison.eps" :ylabel "Foot force z [N]")
+    ))
