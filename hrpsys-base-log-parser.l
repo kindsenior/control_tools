@@ -466,7 +466,7 @@
 
 ;; 複数の*rs-list*に対して関数を呼んでreplotすると上手くプロットできない時がある
 (defun plot-joint-data (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange nil) (replot nil) (reset-gnuplot t)
-                             (plot-joint-name-list (get-joint-name-list :limb :lleg))
+                             (plot-joint-name-list (get-joint-name-list :limb :lleg)) (plot-joint-key-list nil)
                              (plot-keys-list (list '(:torque-vector) '(:ref-dq :act-dq))) (plot-key-names-list (list '("") '("ref" "act"))) (fname-list '("joint-torque" "joint-vel")) (ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
                              (add-fname nil) (save nil) (add-key-name nil) (mode "lines")
                              (dt 0.002) (rotation-const 466))
@@ -490,6 +490,9 @@
               *gp-list*))
 
     (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
+
+    (unless plot-joint-key-list (setq plot-joint-key-list plot-joint-name-list))
+
     (setq prev-act-av (send (elt rs-list start-idx) :angle-vector)
           prev-ref-av (send (elt rs-list start-idx) :get :auto-balancer-reference-vector))
 
@@ -527,7 +530,7 @@
                        (append '(nil) plot-keys))
                tm-list
                :keylist (reduce #'(lambda (ret key-name)
-                                    (append ret (mapcar #'(lambda (joint-name) (concatenate string add-key-name key-name " " joint-name)) plot-joint-name-list)))
+                                    (append ret (mapcar #'(lambda (joint-name) (concatenate string add-key-name key-name " " joint-name)) plot-joint-key-list)))
                                 (append '(nil) plot-key-names))
                :graph-instance gp
                :title ""
