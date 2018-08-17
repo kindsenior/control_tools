@@ -297,7 +297,7 @@
   (&key (rs-list *rs-list*)
         (add-fname nil) (fname "Actual and Reference and Modified Reference Force")
         (axis 2) (cutoff-f nil) (xrange nil) (limb '(:lleg :rleg)) (save t))
-  (let* ( (xrange (calc-xrange xrange rs-list)) (data (subseq *rs-list* (car xrange) (cadr xrange))))
+  (let* ( (xrange (calc-xrange xrange rs-list)) (data (subseq *rs-list* (car xrange) (cadr xrange))) (axis-str (elt '("x" "y" "z") axis)) )
     (graph-view
      (delete nil (list (if (find :rleg limb) (low-pass-filter (mapcar #'(lambda (x) (elt (send x :get :rleg-off-force-vector) axis)) data) :cutoff-f cutoff-f))
                        (if (find :lleg limb) (low-pass-filter (mapcar #'(lambda (x) (elt (send x :get :lleg-off-force-vector) axis)) data) :cutoff-f cutoff-f))
@@ -306,15 +306,15 @@
                        (if (find :rleg limb) (mapcar #'(lambda (x) (elt (send x :get :st-rleg-ref-force) axis)) data))
                        (if (find :lleg limb) (mapcar #'(lambda (x) (elt (send x :get :st-lleg-ref-force) axis)) data))))
      (mapcar #'(lambda (x) (send x :time)) data)
-     :keylist (delete nil (list (if (find :rleg limb) "act rleg force z") (if (find :lleg limb) "act lleg force z")
-                                (if (find :rleg limb) "ref rleg force z") (if (find :lleg limb) "ref lleg force z")
+     :keylist (delete nil (list (if (find :rleg limb)    "Actual right foot") (if (find :lleg limb)    "Actual left foot")
+                                (if (find :rleg limb) "Reference right foot") (if (find :lleg limb) "Reference left foot")
                                 ;; (if (find :rleg limb) "modified ref rleg force z") (if (find :lleg limb) "modified ref lleg force z")
                                 ))
      :title ""
      :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
      :dump-graph save
      :xlabel "Time [s]"
-     :ylabel "Foot force z [N]"
+     :ylabel (format nil "Foot force ~a [N]" axis-str)
      )
     ))
 
