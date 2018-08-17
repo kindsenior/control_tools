@@ -476,8 +476,8 @@
          )
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
-    (if (or (not (boundp '*gp-list*)) (not (= (length *gp-list*) (length plot-keys-list))))
-        (setq *gp-list* (mapcar #'(lambda (x) (gnuplot)) plot-keys-list)))
+    (if (not (boundp '*gp-list*)) (setq *gp-list* (list *gp*)))
+    (while (< (length *gp-list*) (length plot-keys-list)) (push-back (gnuplot) *gp-list*))
 
     (if reset-gnuplot
         (mapc #'(lambda (gp)
