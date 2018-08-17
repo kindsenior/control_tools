@@ -609,6 +609,7 @@
      (when (= idx start-idx)
        (setq ref-dcm-list nil act-dcm-list nil ref-cm-list nil act-cm-list nil
              ref-root-pos-list nil ref-root-vel-list nil
+             ref-root-rot-list nil act-root-rot-list nil
              ref-zmp-list nil act-zmp-list nil
              ref-r-fz-list nil ref-l-fz-list nil act-r-fz-list nil act-l-fz-list nil
              ref-lfoot-pos-list nil act-lfoot-pos-list nil ref-lfoot-rot-list nil act-lfoot-rot-list nil
@@ -667,6 +668,7 @@
      (push-back (send (send (car (send *ref-robot* :links)) :copy-worldcoords) :worldpos) ref-root-pos-list)
      (push-back (scale (/ 1.0 time-step) (v- (car (last ref-root-pos-list)) last-ref-root-pos)) ref-root-vel-list)
      (setq last-ref-root-pos (car (last ref-root-pos-list)))
+     (push-back (send (send (car (send *ref-robot* :links)) :copy-worldcoords) :worldrot) ref-root-rot-list)
 
      ;; procedure for getting actual data
      ;; set fz-thresh (need to modify)
@@ -718,6 +720,7 @@
      (push-back (send (send *ref-robot* :lleg :end-coords :copy-worldcoords) :worldrot) ref-lfoot-rot-list)
      (push-back (send (send *robot*     :lleg :end-coords :copy-worldcoords) :worldpos) act-lfoot-pos-list)
      (push-back (send (send *robot*     :lleg :end-coords :copy-worldcoords) :worldrot) act-lfoot-rot-list)
+     (push-back (send (send (car (send *robot* :links)) :copy-worldcoords) :worldrot) act-root-rot-list)
 
      (push-back (send (send (car (send *ref-robot* :head)) :copy-worldcoords) :worldpos) ref-top-pos-list)
      (push-back (send (send (car (send *robot*     :head)) :copy-worldcoords) :worldpos) act-top-pos-list)
@@ -781,24 +784,28 @@
 
     (let ((pos-scale 1) (vel-scale 0.5) (acc-scale 100) (rot-scale 10) (Lscale 10))
       (setq ref-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) ref-cm-list)
+            act-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) act-cm-list)
             ref-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) ref-cm-list)
+            act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
             ref-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) vel-scale)) ref-dcm-list)
+            act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) vel-scale)) act-dcm-list)
             ref-root-y-list (mapcar #'(lambda (pos) (elt pos 1)) ref-root-pos-list)
             ref-root-dy-list (mapcar #'(lambda (pos) (elt pos 1)) ref-root-vel-list)
             ref-lfoot-z-list (mapcar #'(lambda (pos) (* (- (elt pos 2) 4) pos-scale)) ref-lfoot-pos-list)
-            act-cmx-list (mapcar #'(lambda (cm) (elt cm 0)) act-cm-list)
-            act-cmz-list (mapcar #'(lambda (cm) (elt cm 2)) act-cm-list)
-            act-dcmz-list (mapcar #'(lambda (dcm) (* (elt dcm 2) vel-scale)) act-dcm-list)
+            act-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) pos-scale)) act-lfoot-pos-list)
             ref-zmp-x-list (mapcar #'(lambda (zmp) (elt zmp 0)) ref-zmp-list)
             act-zmp-x-list (mapcar #'(lambda (zmp) (elt zmp 0)) act-zmp-list)
             ref-zmp-y-list (mapcar #'(lambda (zmp) (elt zmp 1)) ref-zmp-list)
             act-zmp-y-list (mapcar #'(lambda (zmp) (elt zmp 1)) act-zmp-list)
-            act-lfoot-z-list (mapcar #'(lambda (pos) (* (elt pos 2) pos-scale)) act-lfoot-pos-list)
             act-root-accel-z-list (mapcar #'(lambda (accel) (* (elt accel 2) acc-scale)) act-root-accel-list)
-            ref-lfoot-y-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) ref-lfoot-rot-list)
-            act-lfoot-y-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) act-lfoot-rot-list)
+            ref-lfoot-pi-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) ref-lfoot-rot-list)
+            act-lfoot-pi-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) act-lfoot-rot-list)
             ref-max-edge-y-list (mapcar #'(lambda (e) (elt e 1)) ref-max-edge-list)
             ref-min-edge-y-list (mapcar #'(lambda (e) (elt e 1)) ref-min-edge-list)
+            ref-lfoot-pi-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) ref-lfoot-rot-list)
+            act-lfoot-pi-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) act-lfoot-rot-list)
+            ref-root-pi-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) ref-root-rot-list)
+            act-root-pi-list (mapcar #'(lambda (rot) (* (rad2deg (elt (car (rpy-angle rot)) 1)) rot-scale)) act-root-rot-list)
             ref-top-z-list (mapcar #'(lambda (pos) (elt pos 2)) ref-top-pos-list)
             act-top-z-list (mapcar #'(lambda (pos) (elt pos 2)) act-top-pos-list)
             ref-Ly-list (mapcar #'(lambda (angular-momentum) (* (elt angular-momentum 1) Lscale)) ref-L-list)
