@@ -515,6 +515,9 @@
       target-point
     (get-nearest-point target-point target-face)))
 
+(defun get-support-polygon (robot)
+  (instance polygon :init :vertices (quickhull (flatten (send-all (send robot :support-polygons) :vertices)))))
+
 (defun get-cop (rs limb &optional (wrt :world) &key (robot *robot*) (fz-thre))
   (let ((cop (send robot :calc-cop-from-force-moment
                     (send rs :get (read-from-string (format nil "~A-force-vector" limb)))
