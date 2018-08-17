@@ -234,8 +234,8 @@
           (case (probe-file fname)
             (:file (setq fname-with-path (reduce #'(lambda (ret val) (concatenate string ret val)) (butlast (reg-split "\\." fname)))) ) ;; fnameにログファイル名を指定した場合
             (:directory (setq fname-with-path (concatenate string fname "/" (car (last (reg-split "/" fname)))) )) ;; fnameにログディレクトリ名を指定した場合
-            (nil (setq fname-with-path 
-                       (concatenate string (unix:getenv "HOME") "/Copy/Documents/log/" (send *robot* :name) "/" fname "/" (car (last (reg-split "/" fname))))) )
+            (t (setq fname-with-path 
+                       (concatenate string (unix:getenv "HOME") "/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/" (send *robot* :name) "/" fname "/" (car (last (reg-split "/" fname))))) )
             )
           ;; (setq fname (car (last (reg-split "/" fname))))
           )
