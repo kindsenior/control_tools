@@ -465,7 +465,7 @@
     ))
 
 ;; 複数の*rs-list*に対して関数を呼んでreplotすると上手くプロットできない時がある
-(defun plot-joint-data (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange nil) (replot nil)
+(defun plot-joint-data (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange nil) (replot nil) (reset-gnuplot t)
                              (plot-joint-name-list (get-joint-name-list :limb :lleg))
                              (plot-keys-list (list '(:torque-vector) '(:ref-dq :act-dq))) (plot-key-names-list (list '("") '("ref" "act"))) (fname-list '("joint-torque" "joint-vel")) (ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
                              (add-fname nil) (save nil) (add-key-name nil) (mode "lines")
@@ -479,14 +479,15 @@
     (if (or (not (boundp '*gp-list*)) (not (= (length *gp-list*) (length plot-keys-list))))
         (setq *gp-list* (mapcar #'(lambda (x) (gnuplot)) plot-keys-list)))
 
-    (mapc #'(lambda (gp)
-              (send gp :command "set size 1,0.5")
-              (send gp :command "set key below")
-              (send gp :command "set key font \"Times New Roman,15\"")
-              (send gp :command "set tics font \"Times New Roman,15\"")
-              (send gp :command "set ytics autofreq")
-              (send gp :command "set lmargin 8"))
-          *gp-list*)
+    (if reset-gnuplot
+        (mapc #'(lambda (gp)
+                  (send gp :command "set size 1,0.5")
+                  (send gp :command "set key below")
+                  (send gp :command "set key font \"Times New Roman,15\"")
+                  (send gp :command "set tics font \"Times New Roman,15\"")
+                  (send gp :command "set ytics autofreq")
+                  (send gp :command "set lmargin 8"))
+              *gp-list*))
 
     (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
     (setq prev-act-av (send (elt rs-list start-idx) :angle-vector)
