@@ -550,67 +550,92 @@
     ))
 
 (defun plot-high-jump-motion-data ()
-  (let ( (start-tm 2) (stop-tm 3.5) )
+  (let ( (start-tm 2) (stop-tm 3.6) )
+    (create-ref-com-robot)
     (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 7500))) (list *ref-robot* *robot*))
 
     (unless (boundp '*high-jump-rs-list*)
       (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")
       (setq *high-jump-rs-list* (copy-object *rs-list*)))
 
-    (analyze-jump-motion :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
+    (analyze-jump-motion :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil :advance-tm 0.025)
 
     (send *gp* :command "set size 1,0.5")
     (send *gp* :command "set key right inside")
     (send *gp* :command "set key font \"Times New Roman,15\"")
     (send *gp* :command "set tics font \"Times New Roman,15\"")
     (send *gp* :command "set ytics autofreq")
-    (send *gp* :command "set lmargin 8")
+    (send *gp* :command "unset yrange")
+    (send *gp* :command "set tmargin 1.2")
+    (send *gp* :command "set lmargin 5")
 
-    (graph-view (list ref-cmz-list act-cmz-list) tm-list :keylist '("reference" "actual") :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-cmz.eps" :ylabel "COG velocity z [mm/s]")
-    (graph-view (list ref-dcmz-list act-dcmz-list) tm-list :keylist '("reference" "actual") :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-dcmz.eps" :ylabel "COG z [mm]")
-    (graph-view (list ref-l-fz-list ref-r-fz-list act-l-fz-list act-r-fz-list) tm-list :keylist '("reference left foot fz" "reference right foot fz" "actual left foot fz" "actual right foot fz")
+    (send *gp* :command "set ylabel offset 3")
+    (graph-view (list ref-cmz-list act-cmz-list) tm-list :keylist '("Reference" "Actual") :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-cmz.eps" :ylabel "COG z [mm]")
+    (graph-view (list ref-l-fz-list ref-r-fz-list act-l-fz-list act-r-fz-list) tm-list :keylist '("Reference left foot fz" "Reference right foot fz" "Actual left foot fz" "Actual right foot fz")
                 :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-fz.eps" :ylabel "Force z [N]")
+    (send *gp* :command "set ylabel offset 3.5")
+    (graph-view (list ref-dcmz-list act-dcmz-list) tm-list :keylist '("Reference" "Actual") :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-dcmz.eps" :ylabel "COG z velocity [mm/s]")
 
-    (plot-joint-data :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :save t :step 2
+    (send *gp* :command "set key width -5")
+    (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set tmargin 2")
+    (send *gp* :command "set ylabel offset 3")
+    (plot-joint-data :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :save t :step 2 :reset-gnuplot nil
+                     :plot-joint-name-list (get-joint-name-list :limb :lleg) :plot-joint-key-list '("Left hip yaw" "Left hip roll" "Left hip pitch" "Left knee" "Left ankle pitch" "Left ankle roll")
                      :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("high-jump-joint-torque") :ylabel-list '("Joint torque [Nm]"))
+    (send *gp* :command "set key width 0")
     ))
 
-(defun plot-different-mass-jump-comparison ()
-  (create-ref-com-robot)
-  (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
+(defun plot-different-mass-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (let ( (common-path (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/comparison/different-mass_jump-250msec/")) )
+    (create-ref-com-robot)
+    (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 3600))) (list *ref-robot* *robot*))
 
-  (unless (boundp '*correct-mass-rs-list*)
-    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-250msec_postq_old-chest-mass_0dxgfz_0delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_JAXON_BLUE_2018_03-01_20-54_31")
-    (setq *correct-mass-rs-list* (copy-object *rs-list*)))
+    (unless (boundp '*correct-mass-rs-list*)
+      (prepare-plot :fname (concatenate string common-path "jump-250msec_postq_old-chest-mass_0dxgfz_0delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_JAXON_BLUE_2018_03-01_20-54_31"))
+      (setq *correct-mass-rs-list* (copy-object *rs-list*)))
 
-  (unless (boundp '*incorrect-mass-rs-list*)
-    (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-250msec_postq_modify-chest-mass_0dxgfz_0delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_little-back-tilt_JAXON_BLUE_2018_03-01_20-45_25")
-    (setq *incorrect-mass-rs-list* (copy-object *rs-list*)))
+    (unless (boundp '*incorrect-mass-rs-list*)
+      (prepare-plot :fname (concatenate string common-path "jump-250msec_postq_modify-chest-mass_0dxgfz_0delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_little-back-tilt_JAXON_BLUE_2018_03-01_20-45_25"))
+      (setq *incorrect-mass-rs-list* (copy-object *rs-list*)))
 
-  ;; (analyze-jump-motion :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
-  ;; (setq correct-mass-ref-dcmz-list ref-dcmz-list
-  ;;       correct-mass-act-l-fz-list act-l-fz-list)
-  ;; (setq correct-tm-list tm-list)
+    ;; (analyze-jump-motion :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil)
+    ;; (setq correct-mass-ref-dcmz-list ref-dcmz-list
+    ;;       correct-mass-act-l-fz-list act-l-fz-list)
+    ;; (setq correct-tm-list tm-list)
 
-  ;; (analyze-jump-motion :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100)
-  ;; (setq incorrect-mass-ref-dcmz-list ref-dcmz-list
-  ;;       incorrect-mass-act-l-fz-list act-l-fz-list)
+    ;; (analyze-jump-motion :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil)
+    ;; (setq incorrect-mass-ref-dcmz-list ref-dcmz-list
+    ;;       incorrect-mass-act-l-fz-list act-l-fz-list)
 
-  (send *gp* :command "set size 1,0.5")
-  (send *gp* :command "set key outside center top horizontal reverse Left")
-  (send *gp* :command "set key font \"Times New Roman,15\"")
-  (send *gp* :command "set tics font \"Times New Roman,15\"")
-  (send *gp* :command "set ytics autofreq")
-  (send *gp* :command "set lmargin 8")
+    (send *gp* :command "set size 1,0.5")
+    (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key font \"Times New Roman,15\"")
+    (send *gp* :command "set tics font \"Times New Roman,15\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "set lmargin 5")
 
-  (graph-view (list correct-mass-ref-dcmz-list incorrect-mass-ref-dcmz-list) tm-list :keylist '("corect mass" "incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
-  (graph-view (list correct-mass-act-l-fz-list incorrect-mass-act-l-fz-list) tm-list :keylist '("corect mass" "incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-fz-comparison.eps" :ylabel "Foot force z [N]")
+    (send *gp* :command "set ylabel offset 3")
+    (graph-view (list correct-mass-ref-dcmz-list incorrect-mass-ref-dcmz-list) tm-list :keylist '("Corect mass" "Incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-dcmz-comparison.eps" :ylabel "COG velocity z [mm/s]")
+    (send *gp* :command "set ylabel offset 2.5")
+    (graph-view (list correct-mass-act-l-fz-list incorrect-mass-act-l-fz-list) tm-list :keylist '("Corect mass" "Incorrect mass") :title "" :dump-graph t :xlabel "" :graph-fname "different-mass-fz-comparison.eps" :ylabel "Foot force z [N]")
 
-  (plot-joint-data :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 2 :add-key-name "correct mass"
-                   :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
-  (plot-joint-data :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :save t :step 2 :replot t :add-key-name "incorrect mass"
-                   :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
-  )
+    (mapc #'(lambda (gp)
+              (send gp :command "set size 1,0.5")
+              (send gp :command "set key width -5")
+              (send gp :command "set key outside center top horizontal reverse Left")
+              (send gp :command "set key font \"Times New Roman,15\"")
+              (send gp :command "set tics font \"Times New Roman,15\"")
+              (send gp :command "set ytics autofreq")
+              (send gp :command "set tmargin 1")
+              (send gp :command "set lmargin 5")
+              (send gp :command "set ylabel offset 2.5"))
+          (if (boundp '*gp-list*) *gp-list* (list *gp*)))
+    (plot-joint-data :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :plot-joint-key-list '("left knee joint") :save t :step 2 :add-key-name "Correct mass" :reset-gnuplot nil
+                     :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
+    (plot-joint-data :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :plot-joint-key-list '("left knee joint") :save t :step 2 :replot t :add-key-name "Incorrect mass" :reset-gnuplot nil
+                     :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
+    ))
 
 (defun plot-walk-shuffle-root-link-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
   (unless (boundp '*walk-rs-list*)
@@ -781,3 +806,298 @@
                 :keylist '("Landing Pgain 5%" "Landing Pgain 20%" "Landing Pgain 40%" "Landing Pgain 60%" "Landing Pgain 80%" "Landing Pgain 100%")
                 :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "different-landing-servo-gain-fz-comparison.eps" :ylabel "Foot force z [N]")
     ))
+
+(defun plot-slip-through-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (let ( (fill-y-range '(-1000 1000)) )
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/slip-through-right-200step-len-8step_5PE_pos-eefmqcop2_0delay-xg-dxg_JAXON_BLUE_2018_03-30_18-19_16")))
+
+    ;; (analyze-jump-motion :start-tm 0 :stop-tm 14 :step 10 :yrange nil :xtics 1)
+
+    (send *gp* :command "set size 1,0.5")
+    ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key opaque box inside right top vertical reverse Left")
+    ;; (send *gp* :command "set key width -2")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,16\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "unset grid")
+
+    (send *gp* :command "set yrange [-1000:200]")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 3.5")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 1.2")
+
+
+    ;; (send *gp* :command "plot x + 500 t \"Sliding phase\" lw 25 lc rgb \"#aa00ff00\" ")
+    (send *gp* :command "plot x + 500 t \"Sliding phase\" lw 25 lc rgb \"#aaaaffaa\" ")
+
+    (send *gp* :command "set style rectangle fc rgb \"green\" fs solid 0.2 noborder")
+    ;; (send *gp* :command "set style rectangle fc rgb \"red\" fs solid 0.2 noborder")
+
+    (send *gp* :command "unset object")
+    (let ((idx 0))
+      (mapc #'(lambda (fill-x-range) (send *gp* :command (format nil "set object ~a rect from ~a,~a to ~a,~a" (incf idx) (car fill-x-range) (car fill-y-range) (cadr fill-x-range) (cadr fill-y-range))))
+            '((1.50 2.15) (2.65 3.30)  (4.5 5.15) (5.65 6.30)  (7.5 8.15) (8.65 9.30)  (10.5 11.15) (11.65 12.30))))
+    ;; (send *gp* :command (format nil "set object 1 rect from ~a,~a to ~a,~a" 1.50 (car fill-y-range) 2.15 (cadr fill-y-range)))
+    ;; (send *gp* :command (format nil "set object 2 rect from ~a,~a to ~a,~a" 2.65 (car fill-y-range) 3.30 (cadr fill-y-range)))
+
+
+    (graph-view (list ref-zmp-y-list act-zmp-y-list ref-max-edge-y-list ref-min-edge-y-list) tm-list
+                :keylist '("Reference ZMP" "Actual ZMP" "Left edge" "Right edge")
+                :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "slip-through-demo-zmp-y.eps" :ylabel "ZMP y [mm]" :replot t )
+    ))
+
+(defun plot-lf-rb-toe-turn-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (let ( (fill-y-range '(-1000 1000)) )
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_RED/lf-rb-toe-turn_little-foot-float_JAXON_RED_2017_02-12_18-53_35")))
+
+    ;; (analyze-jump-motion :start-tm 1 :stop-tm 4 :step 5 :yrange nil :xtics 1)
+
+    ;; plot zmp
+    (send *gp* :command "set size 1,0.5")
+    (send *gp* :command "set key outside center top horizontal reverse Left")
+    ;; (send *gp* :command "set key opaque box inside right top vertical reverse Left")
+    (send *gp* :command "set key width 0")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,16\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "unset grid")
+
+    (send *gp* :command "set yrange [-100:100]")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 3.5")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 1.2")
+
+    (send *gp* :command "set style rectangle fc rgb \"green\" fs solid 0.2 noborder")
+
+    (send *gp* :command "plot x + 500 t \"Sliding phase\" lw 25 lc rgb \"#aaaaffaa\" ")
+    (send *gp* :command "unset object")
+    (let ((idx 0))
+      (mapc #'(lambda (fill-x-range) (send *gp* :command (format nil "set object ~a rect from ~a,~a to ~a,~a" (incf idx) (car fill-x-range) (car fill-y-range) (cadr fill-x-range) (cadr fill-y-range))))
+            '((2.12 3.12))))
+
+    (graph-view (list ref-zmp-x-list act-zmp-x-list) tm-list
+                :keylist '("Reference ZMP" "Actual ZMP")
+                :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "lf-rb-toe-turn-zmp-x.eps" :ylabel "ZMP x [mm]" :replot t )
+
+    ;; plot foot force
+    (send *gp* :command "set size 1,0.5")
+    ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key inside right top vertical reverse Left")
+    (send *gp* :command "set key width -8")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,16\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+    ;; (send *gp* :command "unset grid")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 2.8")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 0.5")
+
+    ;; (send *gp* :command "set style rectangle fc rgb \"green\" fs solid 0.2 noborder")
+    (plot-foot-force :axis 0 :xrange '(1 4))
+    ))
+
+(defun plot-jump-over-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (unless (boundp '*rs-list*)
+    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-370msec_over_3-20hrpsysfile_pp_postq-eefmqp_0delay-xg-dxg_L5,30,10,1,0.5,0.1-70,70,50,10,1,3_S5,30,10,5,0.5,0.1-70,70,50,60,1,5_gear-sound_JAXON_BLUE_2018_04-25_00-22_15")))
+
+  ;; (analyze-jump-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :xtics 0.1 :advance-tm 0.015)
+  ;; (analyze-jump-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 80 :xtics 0.1 :advance-tm 0.015)
+  ;; (analyze-jump-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 80 :xtics 0.1 :advance-tm 0.03)
+  (analyze-jump-motion :start-tm 2.3 :stop-tm 3.3 :step 2 :takeoff-fz-thresh 30 :landing-fz-thresh 23 :xtics 0.1 :advance-tm 0.04)
+
+  ;; plot zmp
+  (send *gp* :command "set size 1,0.5")
+  ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+  (send *gp* :command "set key inside right top vertical reverse Left")
+  (send *gp* :command "set key width 0")
+  ;; (send *gp* :command "set key samplen 2")
+  (send *gp* :command "set key font \"Times New Roman,18\"")
+  (send *gp* :command "set tics font \"Times New Roman,18\"")
+  (send *gp* :command "set ytics autofreq")
+  (send *gp* :command "unset grid")
+
+  (send *gp* :command "set yrange [-10:120]")
+
+  (send *gp* :command "set lmargin 5")
+  (send *gp* :command "set ylabel offset 3")
+
+  (send *gp* :command "set bmargin 2")
+
+  (send *gp* :command "set xlabel offset 0,1")
+  (send *gp* :command "set xtics offset 0,0.5")
+  (send *gp* :command "set tmargin 1.2")
+
+  (send *gp* :command "set style rectangle fc rgb \"green\" fs solid 0.2 noborder")
+
+  (send *gp* :command "plot x + 200 t \"Jumping phase\" lw 25 lc rgb \"#aaaaffaa\" ")
+  (send *gp* :command "unset object")
+  (let ( (idx 0) (fill-y-range '(-1000 1000)) )
+    (mapc #'(lambda (fill-x-range) (send *gp* :command (format nil "set object ~a rect from ~a,~a to ~a,~a" (incf idx) (car fill-x-range) (car fill-y-range) (cadr fill-x-range) (cadr fill-y-range))))
+          '((2.55 2.92))))
+
+  (graph-view (list ref-lfoot-z-list act-lfoot-z-list) tm-list
+              :keylist '("Reference" "Actual")
+              :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "jump-over-foot-z.eps" :ylabel "Foot height z [mm]" :replot t )
+  )
+
+(defun plot-jump-off-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (let ( (start-tm 2.6) (stop-tm 3.6) )
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-off-400mm_postq-eefmqp_RHP-fsensor_L5,30,10,1,0.5,5-70,70,50,10,1,5_S5,30,20,5,1,5-70,70,50,40,40,5_1000CM_100P_1000L_1Lz_0.6f_10n_200nz_JAXON_BLUE_2018_06-12_22-52_00")))
+
+    (analyze-jump-motion :start-tm start-tm :stop-tm stop-tm :step 2 :xtics 0.1 :plot nil)
+
+    (send *gp* :command "set size 1,0.5")
+    (send *gp* :command "set key outside center top horizontal reverse Left")
+    ;; (send *gp* :command "set key inside right top vertical reverse Left")
+    (send *gp* :command "set key width -5")
+    (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,18\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "unset grid")
+
+    (send *gp* :command "set yrange [-100:900]")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 3")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 1.2")
+
+    (send *gp* :command "set style rectangle fc rgb \"green\" fs solid 0.2 noborder")
+
+    (send *gp* :command "plot x - 300 t \"Jumping phase\" lw 25 lc rgb \"#aaaaffaa\" ")
+
+    (send *gp* :command "unset object")
+    (let ( (idx 0) (fill-y-range '(-1000 1000)) )
+      (mapc #'(lambda (fill-x-range) (send *gp* :command (format nil "set object ~a rect from ~a,~a to ~a,~a" (incf idx) (car fill-x-range) (car fill-y-range) (cadr fill-x-range) (cadr fill-y-range))))
+            '((3.12 3.22))))
+
+    (graph-view (list act-l-fz-list act-r-fz-list) tm-list
+                :keylist '("Left foot (takeoff)" "Right foot (land)")
+                :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "jump-off-foot-force.eps" :ylabel "Foot force z [N]" :replot t)
+
+    (send *gp* :command "unset object")
+    (send *gp* :command "set grid")
+    (send *gp* :command "set key width -7")
+    (send *gp* :command "set ylabel offset 2.5")
+    (plot-joint-data :start-tm start-tm :stop-tm stop-tm :save t :step 2 :plot-joint-name-list '("LLEG-JOINT2" "RLEG-JOINT2") :plot-joint-key-list '("Left hip pitch joint (takeoff)" "Right hip pitch joint (land)") :reset-gnuplot nil
+                     :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("jump-off-hip-p-joint-torque") :ylabel-list '("Joint torque [Nm]"))
+    ))
+
+(defun plot-jump-across-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (let ( (start-tm 2.2) (stop-tm 3.2) )
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-across-120msec-700step-len_postq-eefmqpcop2_l-knee,l-ankle-p-wire-changed_5s2l-10l_backward-fall-after-land_JAXON_BLUE_2018_07-25_00-21_22")))
+
+    (analyze-jump-motion :start-tm start-tm :stop-tm stop-tm :step 2 :xtics 0.1 :plot nil)
+
+    (send *gp* :command "set size 1,0.5")
+    (send *gp* :command "set key outside center top horizontal reverse Left")
+    ;; (send *gp* :command "set key inside right top vertical reverse Left")
+    (send *gp* :command "set key width -7")
+    (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,18\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "unset grid")
+
+    (send *gp* :command "set yrange [-200:1200]")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 3.5")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 1.2")
+
+    (send *gp* :command "set style rectangle fc rgb \"green\" fs solid 0.2 noborder")
+
+    (send *gp* :command "plot x - 300 t \"Jumping phase\" lw 25 lc rgb \"#aaaaffaa\" ")
+
+    (send *gp* :command "unset object")
+    (let ( (idx 0) (fill-y-range '(-1000 2000)) )
+      (mapc #'(lambda (fill-x-range) (send *gp* :command (format nil "set object ~a rect from ~a,~a to ~a,~a" (incf idx) (car fill-x-range) (car fill-y-range) (cadr fill-x-range) (cadr fill-y-range))))
+            '((2.6 2.72))))
+
+    (graph-view (list act-l-fz-list act-r-fz-list) tm-list
+                :keylist '("Left foot (land)" "Right foot (takeoff)")
+                :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "jump-across-foot-force.eps" :ylabel "Foot force z [N]" :replot t)
+
+    (send *gp* :command "unset object")
+    (send *gp* :command "set grid")
+    (send *gp* :command "set key width -5")
+    (send *gp* :command "set ylabel offset 2.5")
+    (plot-joint-data :start-tm start-tm :stop-tm stop-tm :save t :step 2 :plot-joint-name-list '("LLEG-JOINT3" "RLEG-JOINT3") :plot-joint-key-list '("Left knee joint (land)" "Right knee joint (takeoff)") :reset-gnuplot nil
+                     :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("jump-across-knee-joint-torque") :ylabel-list '("Joint torque [Nm]"))
+    ))
+
+(defun plot-jump-up-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
+  (unless (boundp '*rs-list*)
+    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")))
+
+    (analyze-jump-motion :start-tm 2.3 :stop-tm 3.3 :step 2 :takeoff-fz-thresh 30 :landing-fz-thresh 23 :xtics 0.1 :advance-tm 0.04)
+
+    (send *gp* :command "set size 1,0.5")
+    ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key inside right top vertical reverse Left")
+    ;; (send *gp* :command "set key width 0")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,18\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+    (send *gp* :command "unset grid")
+
+    (send *gp* :command "set yrange [800:1600]")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 3.5")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 0.5")
+
+    (send *gp* :command "set style rectangle fc rgb \"green\" fs solid 0.2 noborder")
+
+    (send *gp* :command "plot x + 200 t \"Jumping phase\" lw 25 lc rgb \"#aaaaffaa\" ")
+    (send *gp* :command "unset object")
+    (let ( (idx 0) (fill-y-range '(-1000 2000)) )
+      (mapc #'(lambda (fill-x-range) (send *gp* :command (format nil "set object ~a rect from ~a,~a to ~a,~a" (incf idx) (car fill-x-range) (car fill-y-range) (cadr fill-x-range) (cadr fill-y-range))))
+            '((2.55 2.92))))
+
+    (graph-view (list ref-top-z-list act-top-z-list) tm-list
+                :keylist '("Reference" "Actual")
+                :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "jump-up-top-z.eps" :ylabel "Top height z [mm]" :replot t )
+    )
