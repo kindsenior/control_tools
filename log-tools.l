@@ -485,6 +485,13 @@
      )
   ))
 
+(defun avg-coords (coords-list &key weight-list)
+  (let ((n 1))
+    (if (= (length coords-list) 1)
+        (car coords-list)
+      (reduce #'(lambda (coord0 coord1)  (midcoords (/ 1.0 (incf n)) coord0 coord1)) coords-list))
+    ))
+
 (defun create-ref-com-robot (&key (ref-color #f(0 0 1)) (com-color #f(0 1 0)) (act-color #f(1 0 0)))
   (unless (boundp '*ref-robot*)
     (setq *ref-robot* (instance (class *robot*) :init))
