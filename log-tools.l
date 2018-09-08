@@ -75,7 +75,8 @@
         (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a/~a.log" user-name machine-name path fname)))
     )))
 
-(defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (parse-flg nil) (save-shm-log nil) (ask-to-save-shm-log t) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
+(defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log")
+                      (parse-flg nil) (save-shm-log nil) (ask-to-save-shm-log t) (save-param t))
   ;; デフォルトログファイル名
   (if (not fname)
       (if (boundp '*__fname__*)
@@ -90,7 +91,7 @@
 
   (cond
    ( (equal type :old) (save-log-old fname) )
-   ( (equal type :new) (setq fname (save-log-new fname parse-flg log-dir save-shm-log ask-to-save-shm-log)) )
+   ( (equal type :new) (setq fname (save-log-new fname parse-flg log-dir save-shm-log ask-to-save-shm-log save-param)) )
    )
   fname
   )
@@ -126,7 +127,7 @@
     (send *ci* :start-log) ))
 
 ;; 新システム
-(defun save-log-new (fname parse-flg log-dir save-shm-log ask-to-save-shm-log)
+(defun save-log-new (fname parse-flg log-dir save-shm-log ask-to-save-shm-log save-param)
   (let ( machine-name raw-date date path fstream uname (org-fname "test") (eof (gensym)) shm-log-saved )
 
     ;; 日付追加
@@ -150,7 +151,7 @@
           (setq fname (format nil "~a~a_~a_~a" platform-name fname (send *robot* :name) date)))
 
         ;; コピー先設定
-        (setq path (format nil "/home/~a/~a/~a/~a"
+        (setq path (format nil "/home/~a/~a/~a/~a/"
                            (unix:getenv "USER") log-dir (send *robot* :name) fname) )
         (unix:system (format nil "mkdir -p ~a" path))
 
@@ -176,12 +177,15 @@
             ( t (warning-message 1 "cannot use save-log in this robot~%") )
             )
            (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/" org-fname "* " path))
-           (when shm-log-saved (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/shm.log " path "/"org-fname ".log")))
+           (when shm-log-saved (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/shm.log " path org-fname ".log")))
+           (when save-param (save-param :param-dir path))
            )
          )
         (unix:system (concatenate string "find " path "| rename 's/" org-fname "/" fname "/'"))
         (unix:system (concatenate string "find " path "| rename 's/" (send *robot* :name) "\\(Robot\\)/RobotHardware/'" ));; for old choreonoid log
         (unix:system (concatenate string "find " path "| rename 's/RobotHardware_choreonoid0/RobotHardware0/'" ));; for choreonoid log
+
+        (format t "saved logs in ~a%" path)
 
         ;; (sys:thread-no-wait #'plot-rs :fname fname :mode :force :save t :create t)
         (if parse-flg (sys:thread-no-wait #'prepare-plot :fname fname :create t))
@@ -190,6 +194,13 @@
         fname
         ))
     ))
+
+(defun save-param (&key (param-list nil) (param-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log"))
+  (let ( (hrpsys-param-fname (concatenate string param-dir "hrpsys-param.l")) )
+  (setq *st-param* (send *ri* :get-st-param))
+  (setq *abc-param* (send *ri* :get-auto-balancer-param))
+  (dump-loadable-structure hrpsys-param-fname *st-param* *abc-param*)
+  ))
 
 ;; プロットをアニメーションで表示
 (defun anim_gnuplot(&key (yrange "[-3:3]") (xtics 0.5) (ylabel "joint angular velocity [rad/s]")
