@@ -88,7 +88,8 @@
   )
 
 (defun is-choreonoid ()
-  (if (and (is-simulation) (substringp "choreonoid" (read-line (piped-fork "rtls localhost:15005/ -l |grep RobotHardware")))) t nil))
+  (and (is-simulation) (> (read-from-string (read-line (piped-fork "rtls localhost:15005/ -l |grep HEAD | wc -l"))) 0))
+  )
 
 ;; servo-state判定
 (defun get-servo-states (&key (print nil))
