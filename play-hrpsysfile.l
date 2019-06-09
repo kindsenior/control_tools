@@ -34,6 +34,13 @@
   (when (not (boundp '*hrp2*)) (setup-model-for-hrp2) (setq *robot* *hrp2*)  );; old hrpsys
   )
 
+;; 実機かシミュレーションか判定
+(defun is-simulation ()
+  (if (ros::get-param "use_sim_time" nil) t nil))
+
+(defun is-choreonoid ()
+  (and (is-simulation) (> (read-from-string (read-line (piped-fork "rtls localhost:15005/ -l |grep HEAD | wc -l"))) 0)))
+
 (ros::roseus "play-hrpsysfile.l")
 (ros::load-ros-manifest "trans_ros_bridge")
 
@@ -79,17 +86,6 @@
      )
     user-name
     ))
-
-;; 実機かシミュレーションか判定
-(defun is-simulation ()
-  (if (ros::get-param "use_sim_time" nil);; シミュレーションフラグ
-      t
-    nil)
-  )
-
-(defun is-choreonoid ()
-  (and (is-simulation) (> (read-from-string (read-line (piped-fork "rtls localhost:15005/ -l |grep HEAD | wc -l"))) 0))
-  )
 
 ;; servo-state判定
 (defun get-servo-states (&key (print nil))
