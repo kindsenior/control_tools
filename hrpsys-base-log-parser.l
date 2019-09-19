@@ -467,7 +467,8 @@
 ;; 複数の*rs-list*に対して関数を呼んでreplotすると上手くプロットできない時がある
 (defun plot-joint-data (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange nil) (replot nil) (reset-gnuplot t)
                              (plot-joint-name-list (get-joint-name-list :limb :lleg)) (plot-joint-key-list nil)
-                             (plot-keys-list (list '(:torque-vector) '(:ref-dq :act-dq))) (plot-key-names-list (list '("") '("ref" "act"))) (fname-list '("joint-torque" "joint-vel")) (ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
+                             (plot-keys-list (list '(:torque-vector) '(:ref-dq :act-dq))) (plot-key-names-list (list '("") '("ref" "act"))) (fname-list '("joint-torque" "joint-vel"))
+                             (xlabel-list '("" "")) (ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
                              (add-fname nil) (save nil) (add-key-name nil) (mode "lines")
                              (dt 0.002) (rotation-const 466))
   (let* ( (start-idx) (stop-idx) (act-torque-vector) (error-list nil) (prev-act-av) (prev-ref-av) (idx) (tm-list nil) (urata-len 17)
@@ -522,7 +523,7 @@
      )
 
     (if add-key-name (setq add-key-name (concatenate string add-key-name " ")) (setq add-key-name ""))
-    (mapc #'(lambda (gp plot-keys plot-key-names fname ylabel)
+    (mapc #'(lambda (gp plot-keys plot-key-names fname xlabel ylabel)
               (graph-view
                (reduce #'(lambda (ret plot-key)
                            (append ret
@@ -537,7 +538,7 @@
                :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
                :dump-graph save
                ;; :xlabel "Time [s]"
-               :xlabel ""
+               :xlabel xlabel
                :ylabel ylabel
                :mode mode
                :replot replot
@@ -546,6 +547,7 @@
           plot-keys-list
           plot-key-names-list
           fname-list
+          xlabel-list
           ylabel-list)
     ))
 
