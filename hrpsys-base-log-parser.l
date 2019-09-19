@@ -504,7 +504,7 @@
      (< idx stop-idx)
 
      (setq rs (elt rs-list idx))
-     (push-back (send rs :time) tm-list)
+     (push-back (- (send rs :time) start-tm) tm-list)
 
      (mapc #'(lambda (joint-idx ref-dq act-dq act-torque)
                (push-back ref-dq (elt (elt data-list (position :ref-dq data-key-list)) joint-idx))
