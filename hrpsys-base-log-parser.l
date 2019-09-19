@@ -552,12 +552,13 @@
     ))
 
 (defun plot-high-jump-motion-data ()
-  (let ( (start-tm 2) (stop-tm 3.6) )
+  (let ( (start-tm 2.3) (stop-tm 3.3) )
     (create-ref-com-robot)
     (mapc #'(lambda (robot) (mapc #'(lambda (link mass) (send link :weight mass)) (send robot :torso :links) (list 800 4889.43 7500))) (list *ref-robot* *robot*))
 
     (unless (boundp '*high-jump-rs-list*)
-      (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")
+      ;; (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")
+      (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")
       (setq *high-jump-rs-list* (copy-object *rs-list*)))
 
     (analyze-jump-motion :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil :advance-tm 0.025)
@@ -578,14 +579,26 @@
     (send *gp* :command "set ylabel offset 3.5")
     (graph-view (list ref-dcmz-list act-dcmz-list) tm-list :keylist '("Reference" "Actual") :title "" :dump-graph t :xlabel "" :graph-fname "high-jump-dcmz.eps" :ylabel "COG z velocity [mm/s]")
 
+    (send *gp* :command "set size 1,0.4")
     (send *gp* :command "set key width -5")
     (send *gp* :command "set key outside center top horizontal reverse Left")
-    (send *gp* :command "set tmargin 2")
-    (send *gp* :command "set ylabel offset 3")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set ytics autofreq offset 0.5,0")
+    (send *gp* :command "set tmargin 1")
+    (send *gp* :command "set bmargin 1")
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set xlabel offset 0,1.2")
+    (send *gp* :command "set ylabel offset 3,0")
+
     (plot-joint-data :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :save t :step 2 :reset-gnuplot nil
-                     :plot-joint-name-list (get-joint-name-list :limb :lleg) :plot-joint-key-list '("Left hip yaw" "Left hip roll" "Left hip pitch" "Left knee" "Left ankle pitch" "Left ankle roll")
-                     :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("high-jump-joint-torque") :ylabel-list '("Joint torque [Nm]"))
-    (send *gp* :command "set key width 0")
+                     :plot-joint-name-list '("LLEG-JOINT2" "LLEG-JOINT3" "LLEG-JOINT4") :plot-joint-key-list '("Hip pitch" "Knee" "Ankle pitch")
+                     :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("high-jump-joint-torque") :xlabel-list '("") :ylabel-list '("Torque [Nm]"))
+
+    (send *gp* :command "set bmargin 2")
+    (send *gp* :command "set ylabel offset 3.2")
+    (plot-joint-data :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :save t :step 2 :reset-gnuplot nil
+                     :plot-joint-name-list '("LLEG-JOINT2" "LLEG-JOINT3" "LLEG-JOINT4") :plot-joint-key-list '("Hip pitch" "Knee" "Ankle pitch")
+                     :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("high-jump-joint-velocity") :xlabel-list '("Time [s]") :ylabel-list '("Velocity [deg/s]"))
     ))
 
 (defun plot-different-mass-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
