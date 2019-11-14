@@ -454,7 +454,7 @@
   ))
 
 (defun set-current-pose (&key (tm 10) (zmp-offset #f(0 0 0)) (lcop-offset #f(0 0)) (rcop-offset #f(0 0)) (wait nil)
-                              (contact-state-list '(1 1 0 0)) (leg-option :both))
+                              (contact-state-list '(1 1 0 0)) (leg-option :both) (finger #f(-80 80 -80 80)))
   (let* ( (zmp) (fz) (lwrench) (rwrench)
           (fname-with-path "/tmp/set-current-pose")
           ;; (waist-coord)
@@ -498,7 +498,7 @@
      (pf posfile :direction :output)
      (let (av)
        (setq av (send *robot* :angle-vector))
-       (if (and (equal (send *robot* :name) "JAXON_RED") (is-choreonoid)) (setq av (concatenate float-vector av #f(0 0 0 0))))
+       (if (and (equal (send *robot* :name) "JAXON_RED") (is-choreonoid)) (setq av (concatenate float-vector av finger)))
        (format pf "0 ")
        (mapc #'(lambda (angle) (format pf "~s " (deg2rad angle))) (coerce av cons))
        (format pf "~%")
