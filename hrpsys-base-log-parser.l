@@ -398,11 +398,11 @@
                                (plot-joint-name-list (get-joint-name-list :limb :legs))
                                (plot-key-list '(:voltage-drop :board-vin :servo-alarm)) (plot-key-name-list '("Voltage drop" "Vin" "error"))
                                (dt 0.002) (rotation-const 466))
-  (let* ( (start-idx) (stop-idx) (servo-state-list) (error-list nil) (prev-av) (idx) (tm-list nil) (urata-len 17)
+  (let* ( (start-idx) (stop-idx) (servo-state-list) (error-list nil) (prev-av) (idx) (tm-list nil) (urata-len 17) (ret-list)
          (joint-name-list (get-joint-name-list))
          (servo-state-key-list '(:dummy-alarm :motor-core-temp :motor-output :board-vin :ref-angle :enc-angle :abs-angle :enc-abs-diff :motor-outer-temp :ref-angle-shm
                                         :board-vdd :pgain :dgain :current :comm-normal :error0 :error1))
-         (parse-key-list '(:board-vin :current :pgain :dgain)) (data-key-list (append parse-key-list '(:dq :voltage-drop :servo-alarm)))
+         (parse-key-list '(:board-vin :current :pgain :dgain :abs-angle :enc-angle)) (data-key-list (append parse-key-list '(:dq :voltage-drop :servo-alarm)))
          (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 255.49 208.71 196.88 203.70 2202.58))) (make-list 19 :initial-element 1)))
          ;; (gear-ratio-list (append (flatten (make-list 2 :initial-element '(227.67 332.14 233.75 252 275 241.071))) (make-list 19 :initial-element 1)))
          )
@@ -462,6 +462,14 @@
      :mode mode
      )
 
+    (mapc #'(lambda (plot-key)
+                (push (elt data-list (position plot-key data-key-list)) ret-list)
+                (push plot-key ret-list)
+                )
+          plot-key-list)
+    (push tm-list ret-list)
+    (push :time ret-list)
+    ret-list
     ))
 
 ;; 複数の*rs-list*に対して関数を呼んでreplotすると上手くプロットできない時がある
@@ -472,7 +480,7 @@
                              (add-fname nil) (save nil) (add-key-name nil) (mode "lines")
                              (dt 0.002) (rotation-const 466))
   (let* ( (start-idx) (stop-idx) (act-torque-vector) (error-list nil) (prev-act-av) (prev-ref-av) (idx) (tm-list nil) (urata-len 17)
-         (joint-name-list (get-joint-name-list))
+         (joint-name-list (get-joint-name-list)) (ret-list)
          (parse-key-list '(:torque-vector)) (data-key-list (append parse-key-list '(:ref-dq :act-dq)))
          )
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
@@ -549,6 +557,15 @@
           fname-list
           xlabel-list
           ylabel-list)
+
+    (mapc #'(lambda (plot-key)
+              (push (elt data-list (position plot-key data-key-list)) ret-list)
+              (push plot-key ret-list)
+              )
+          (flatten plot-keys-list))
+    (push tm-list ret-list)
+    (push :time ret-list)
+    ret-list
     ))
 
 (defun plot-high-jump-motion-data ()
@@ -650,6 +667,7 @@
                      :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
     (plot-joint-data :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :plot-joint-name-list '("LLEG-JOINT3") :plot-joint-key-list '("left knee joint") :save t :step 2 :replot t :add-key-name "Incorrect mass" :reset-gnuplot nil
                      :plot-keys-list '((:torque-vector) (:act-dq)) :plot-key-names-list '(("") ("")) :fname-list '("different-mass-joint-torque-comparison" "different-mass-joint-velocity-comparison") :ylabel-list '("Joint torque [Nm]" "Joint velocity [deg/s]"))
+    (print "")
     ))
 
 (defun plot-walk-shuffle-root-link-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
@@ -1026,6 +1044,7 @@
     (send *gp* :command "set ylabel offset 2.5")
     (plot-joint-data :start-tm start-tm :stop-tm stop-tm :save t :step 2 :plot-joint-name-list '("LLEG-JOINT2" "RLEG-JOINT2") :plot-joint-key-list '("Left hip pitch joint (takeoff)" "Right hip pitch joint (land)") :reset-gnuplot nil
                      :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("jump-off-hip-p-joint-torque") :ylabel-list '("Joint torque [Nm]"))
+    (print "")
     ))
 
 (defun plot-jump-across-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
@@ -1075,6 +1094,7 @@
     (send *gp* :command "set ylabel offset 2.5")
     (plot-joint-data :start-tm start-tm :stop-tm stop-tm :save t :step 2 :plot-joint-name-list '("LLEG-JOINT3" "RLEG-JOINT3") :plot-joint-key-list '("Left knee joint (land)" "Right knee joint (takeoff)") :reset-gnuplot nil
                      :plot-keys-list '((:torque-vector)) :plot-key-names-list '(("")) :fname-list '("jump-across-knee-joint-torque") :ylabel-list '("Joint torque [Nm]"))
+    (print "")
     ))
 
 (defun plot-jump-up-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
