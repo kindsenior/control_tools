@@ -1136,3 +1136,278 @@
                 :keylist '("Reference" "Actual")
                 :title "" :dump-graph t :xlabel "Time [s]" :graph-fname "jump-up-top-z.eps" :ylabel "Top height z [mm]" :replot t )
     )
+
+(defun plot-zmp-step-response (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/")
+                                    (start-tm 4.1) (stop-tm 9.1) (dt 0.002) (plot-idx 0) (offset -31))
+  (let ((rs-list) (xrange (list start-tm stop-tm)))
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/test-zmp-response_0delay_5tm_20aux_k-2.67,-0.34,0_JAXON_BLUE_2020_02-24_17-56_14")))
+    (load "~/prog/euslib/demo/nozawa/motion/test-kajita-st.l")
+
+    (setq xrange (calc-xrange xrange *rs-list*)
+          rs-list (subseq *rs-list* (car xrange) (cadr xrange)))
+
+    (setq ret (test-zmp-IP-model-simulate
+               :cog-height 550
+               :time-constant 0.045
+               :ref-zmp-aux -15
+               :dt dt :total-time (- stop-tm start-tm)
+               :kp -2.67 :kv -0.34))
+
+    (send *gp* :command "set size 1,0.5")
+    ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key inside right top vertical reverse Left")
+    ;; (send *gp* :command "set key width 0")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,18\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+
+    ;; (send *gp* :command "set yrange [800:1600]")
+
+    (send *gp* :command "set lmargin 5")
+    (send *gp* :command "set ylabel offset 2")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 0.5")
+
+    (send *gp* :command "unset object")
+
+    (setq ref-zmp-list (mapcar #'(lambda (x) (+ (elt (send x :get :stabilizer-reference-zmp) plot-idx) offset)) rs-list)
+          act-zmp-list (mapcar #'(lambda (x) (+ (elt (send x :get :stabilizer-zmp) plot-idx) offset)) rs-list)
+          act-cog-list (mapcar #'(lambda (x) (+ (elt (send x :cog) plot-idx) offset)) rs-list))
+
+    (graph-view
+     (list (mapcar #'(lambda (x) (cadr (memq :refzmp x))) ret)
+           (mapcar #'(lambda (x) (cadr (memq :cog x))) ret)
+           (mapcar #'(lambda (x) (cadr (memq :zmp x))) ret)
+           act-cog-list
+           act-zmp-list
+           )
+     (mapcar #'(lambda (x) (send x :time)) *rs-list*)
+     :keylist (list  "Step input" "COG (simulation)" "ZMP (simulation)" "COG (experiment)" "ZMP (experiment)")
+     :title "system-time-constant-identification"
+     :xlabel "Time [s]"
+     :ylabel "x [m]"
+     :dump-graph t)
+    ))
+
+(defun plot-torque-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/")
+                                    (start-tm 2.1) (stop-tm 3.7) (dt 0.002) (plot-idx 0) (offset -31) (yrange '(-1 1)) (step 10)
+                                    ;; (plot-joint-name-list '("LLEG-JOINT3"))
+                                    (plot-joint-name "LLEG-JOINT3"))
+  (let ((rs-list) (xrange (list start-tm stop-tm)) (tmp-key-list '(:abs-angle :enc-angle)) (gain -1)
+        ;; (joint-stiffness 4700)
+        (joint-stiffness 2000)
+        (joint-name-list (get-joint-name-list)))
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")))
+
+    (setq xrange (calc-xrange xrange *rs-list*)
+          rs-list (subseq *rs-list* (car xrange) (cadr xrange)))
+
+    (setq abs-enc-list (plot-voltage-drop :plot-joint-name-list (list plot-joint-name) :yrange '(0 3) :plot-key-list tmp-key-list :step step :start-tm start-tm :stop-tm stop-tm))
+    (setq torque-vector-list (plot-joint-data :plot-joint-name-list (list plot-joint-name) :plot-joint-key-list '("") :ylabel-list '("") :fname-list '("")
+                                              :plot-keys-list '((:torque-vector)) :plot-key-names-list '((""))
+                                              :step step :start-tm start-tm :stop-tm stop-tm))
+    ;; (setq tm-list (mapcar #'(lambda (rs) (send rs :time)) rs-list))
+
+    (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
+
+    (send *gp* :command "set size 1,0.5")
+    ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key inside left top vertical reverse Left")
+    ;; (send *gp* :command "set key width 0")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,18\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set ytics autofreq")
+
+    ;; (send *gp* :command "set yrange [800:1600]")
+
+    (send *gp* :command "set lmargin 6")
+    (send *gp* :command "set ylabel offset 2")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 0.5")
+
+    (setq joint-idx (position plot-joint-name joint-name-list :test #'equal))
+    (graph-view
+     (list
+      (mapcar #'(lambda (tq) (* gain tq)) (elt (cadr (memq :torque-vector torque-vector-list)) joint-idx))
+      (mapcar #'(lambda (abs-angle enc-angle) (* gain joint-stiffness (- enc-angle abs-angle)))
+              (elt (cadr (memq :abs-angle abs-enc-list)) joint-idx)
+              (elt (cadr (memq :enc-angle abs-enc-list)) joint-idx))
+      )
+     (mapcar #'(lambda (tm) (- tm start-tm)) (cadr (memq :time abs-enc-list)))
+     :title ""
+     :graph-fname "high-jump-joint-torque-estimation.eps"
+     :dump-graph t
+     :keylist '("Estimated from current" "Estimated from elongation")
+     :xlabel "Time [s]"
+     :ylabel "Torque [Nm]"
+     )
+    tmp-key-list
+    ))
+
+(defun plot-st-cog-zmp-absolute
+  (&key (idx 1) (rs-list *rs-list*)
+        (plot-abs-p nil)
+        (error-thre 30)
+        (start-tm 0) (stop-tm 22)
+        (yrange '(-160 160)))
+  (let* ((xrange (calc-xrange (list start-tm stop-tm) *rs-list*))
+         (rs-list (subseq *rs-list* (car xrange) (cadr xrange)))
+         (rcog-name (if plot-abs-p (read-from-string (format nil ":abs-~A" (string-downcase :reference-cog))) :reference-cog))
+         (cog-name (if plot-abs-p (read-from-string (format nil ":abs-~A" (string-downcase :cog))) :cog))
+         (rzmp-name (if plot-abs-p (read-from-string (format nil ":abs-~A" (string-downcase :stabilizer-reference-zmp))) :stabilizer-reference-zmp))
+         (zmp-name (if plot-abs-p (read-from-string (format nil ":abs-~A" (string-downcase :stabilizer-zmp))) :stabilizer-zmp))
+         (nzmp-name (if plot-abs-p (read-from-string (format nil ":abs-~A" (string-downcase :stabilizer-newzmp))) :stabilizer-newzmp))
+         (state-data
+          (list (mapcar #'(lambda (x) (elt (if plot-abs-p (send x :get rcog-name) (send x rcog-name)) idx)) rs-list)
+                (mapcar #'(lambda (x) (elt (if plot-abs-p (send x :get   cog-name) (send x cog-name)) idx)) rs-list)
+                (mapcar #'(lambda (x) (elt (send x :get rzmp-name) idx)) rs-list)
+                ;; (mapcar #'(lambda (x) (elt (send x :get nzmp-name) idx)) rs-list)
+                (mapcar #'(lambda (x) (elt (send x :get  zmp-name) idx)) rs-list)
+                )))
+
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/_check/uneven-ground_go-vel/go-vel_30lz_JAXON_BLUE_2018_02-20_21-52_53")))
+
+    (setq state-data
+          (mapcar #'(lambda (x-list)
+                      (let ((prev (car x-list)) (offset 0))
+                        (mapcar #'(lambda (x)
+                                    (when (> (abs (- prev x)) error-thre) (setq offset (+ offset (- prev x))) )
+                                    (setq prev x)
+                                    (+ x offset))
+                                x-list)
+                        )
+                      ) state-data))
+
+    (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
+
+    (send *gp* :command "set size 1,0.5")
+    ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key inside right top horizontal reverse Left")
+    ;; (send *gp* :command "set key width 0")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,18\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+
+    (send *gp* :command "unset grid")
+    (send *gp* :command "set xtics 1")
+    (send *gp* :command "set ytics autofreq")
+
+    (send *gp* :command "set lmargin 6")
+    (send *gp* :command "set ylabel offset 2")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 0.5")
+
+    (setq step-num 5 step-tm 2.4 first-land-tm 3.4 single-support-tm 1.6)
+    (mapc
+     #'(lambda (idx land-tm takeoff-tm)
+         (send *gp* :command (format nil "set object ~s rect from ~s,~s to ~s,~s fc lt 1" (1+ idx) land-tm (car yrange) takeoff-tm (cadr yrange)))
+         (send *gp* :command (format nil "set object ~s rect fc rgb \"gray\" fillstyle solid 1.0 noborder" (1+ idx)))
+         )
+     (range step-num)
+     (mapcar #'(lambda (idx) (+ (* idx step-tm) first-land-tm))                   (range step-num))
+     (mapcar #'(lambda (idx) (+ (* idx step-tm) first-land-tm single-support-tm)) (range step-num)))
+
+    (graph-view
+     state-data
+     (mapcar #'(lambda (rs) (send rs :time)) rs-list)
+     :title ""
+     :graph-fname "walk-on-step_absolute-zmp-cog.eps"
+     :dump-graph t
+     ;; :keylist (list "ref COG" "COG" "ref ZMP" "newZMP" "ZMP")
+     :keylist (list "ref COG" "COG" "ref ZMP" "ZMP")
+     :xlabel "Time [s]"
+     :ylabel "ZMP, COG [mm]"
+     )))
+
+(defun plot-torque-step-response
+  (&key (axis :z) (rs-list) (start-tm 2.82) (stop-tm 3.32) (yrange nil) (adv-offset 0.005)
+        (limbs (get-limbs-in-force-sensor-order *robot*))
+        (additional-title "comp test"))
+  (let* ((xrange (list start-tm stop-tm))
+         (joint-idx 4) (offset 2.3) (gain -0.9)
+         (t0 nil) (t1 nil)
+         )
+
+    (unless (boundp '*rs-list*)
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/_check/uneven-ground_go-vel/go-vel_30lz_JAXON_BLUE_2018_02-20_21-52_53")))
+
+    (setq adv-offset (round (/ adv-offset 0.002)))
+    (setq xrange (calc-xrange xrange *rs-list*)
+          rs-list (subseq *rs-list* (car xrange) (cadr xrange))
+          adv-rs-list (subseq *rs-list* (+ adv-offset (car xrange)) (+ adv-offset (cadr xrange))))
+
+    (setq step-width (- (elt (send rs :get :rleg-reference-force-vector) 0) (elt (send rs :get :rleg-reference-force-vector) 1)))
+    (setq state-data
+          (list
+           (mapcar #'(lambda (rs)
+                       (if (< (elt (send rs :torque-vector) (+ (- (position (car (send *robot* :rleg)) (send *robot* :links)) 1) joint-idx)) 5);; switch by current torque
+                           0
+                         step-width
+                         )
+                       ) rs-list)
+           ;; (mapcar #'(lambda (rs) (elt (send rs :torque-vector) (+ (- (position (car (send *robot* :rleg)) (send *robot* :links)) 1) joint-idx))) rs-list)
+           (mapcar #'(lambda (rs)
+                      (send *robot* :angle-vector (send rs :angle-vector))
+                      (setq J (send *robot* :calc-jacobian-from-link-list (send *robot* :rleg :links) :move-target (send *robot* :rleg :end-coords) :rotation-axis t))
+                      (setq wrench (concatenate float-vector (send rs :get :rleg-off-force-vector) (send rs :get :rleg-off-moment-vector)))
+                      (setq ret (* (+ (aref (m* (matrix wrench) J) 0 joint-idx) offset) gain))
+                      (when (and (not t0) (> ret (* 0.1 step-width))) (setq t0 (send rs :time)))
+                      (when (and (not t1) (> ret (* 0.9 step-width))) (setq t1 (send rs :time)))
+                      ret
+                      )
+                   adv-rs-list)
+           )
+          )
+    (setq rising-time (- t1 t0))
+    (format t "t0:~s t1:~s rising time:~s band width:~s~%" t0 t1 rising-time (/ 0.35 rising-time))
+
+    (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
+
+    (send *gp* :command "set size 1,0.5")
+    ;; (send *gp* :command "set key outside center top horizontal reverse Left")
+    (send *gp* :command "set key inside left top vertical reverse Left")
+    ;; (send *gp* :command "set key width 0")
+    ;; (send *gp* :command "set key samplen 2")
+    (send *gp* :command "set key font \"Times New Roman,18\"")
+    (send *gp* :command "set tics font \"Times New Roman,18\"")
+    (send *gp* :command "set xtics 0.05")
+    (send *gp* :command "set ytics autofreq")
+
+    ;; (send *gp* :command "set yrange [800:1600]")
+
+    (send *gp* :command "set lmargin 4")
+    (send *gp* :command "set ylabel offset 2")
+
+    (send *gp* :command "set bmargin 2")
+
+    (send *gp* :command "set xlabel offset 0,1.1")
+    (send *gp* :command "set xtics offset 0,0.5")
+    (send *gp* :command "set tmargin 0.5")
+
+    (graph-view
+     state-data
+     (mapcar #'(lambda (x) (- (send x :time) start-tm)) rs-list)
+     :title ""
+     :graph-fname "torque-step-response.eps"
+     :dump-graph t
+     :keylist '("Step input" "Measured")
+     :xlabel "Time [s]"
+     :ylabel "Torque [Nm]"
+     )))
