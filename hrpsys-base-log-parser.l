@@ -1099,7 +1099,7 @@
 
 (defun plot-jump-up-motion-data (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
   (unless (boundp '*rs-list*)
-    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")))
+    (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")))
 
     (analyze-jump-motion :start-tm 2.3 :stop-tm 3.3 :step 2 :takeoff-fz-thresh 30 :landing-fz-thresh 23 :xtics 0.1 :advance-tm 0.04)
 
