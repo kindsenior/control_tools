@@ -1196,7 +1196,7 @@
     ))
 
 (defun plot-torque-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/")
-                                    (start-tm 2.1) (stop-tm 3.7) (dt 0.002) (plot-idx 0) (offset -31) (yrange '(-1 1)) (step 10)
+                                    (start-tm 2.1) (stop-tm 3.7) (dt 0.002) (plot-idx 0) (offset -31) (yrange '(-200 500)) (step 2)
                                     ;; (plot-joint-name-list '("LLEG-JOINT3"))
                                     (plot-joint-name "LLEG-JOINT3"))
   (let ((rs-list) (xrange (list start-tm stop-tm)) (tmp-key-list '(:abs-angle :enc-angle)) (gain -1)
@@ -1226,8 +1226,7 @@
     (send *gp* :command "set tics font \"Times New Roman,18\"")
     (send *gp* :command "set ytics autofreq")
 
-    ;; (send *gp* :command "set yrange [800:1600]")
-
+    (send *gp* :command "unset grid")
     (send *gp* :command "set lmargin 6")
     (send *gp* :command "set ylabel offset 2")
 
@@ -1236,6 +1235,9 @@
     (send *gp* :command "set xlabel offset 0,1")
     (send *gp* :command "set xtics offset 0,0.5")
     (send *gp* :command "set tmargin 0.5")
+
+    (send *gp* :command (format nil "set object 1 rect from ~s,~s to ~s,~s fc lt 1" 0.5 (car yrange) 1 (cadr yrange)))
+    (send *gp* :command (format nil "set object 1 rect fc rgb \"gray\" fillstyle solid 1.0 noborder"))
 
     (setq joint-idx (position plot-joint-name joint-name-list :test #'equal))
     (graph-view
@@ -1249,7 +1251,7 @@
      :title ""
      :graph-fname "high-jump-joint-torque-estimation.eps"
      :dump-graph t
-     :keylist '("Estimated from current" "Estimated from elongation")
+     :keylist '("Estimated from motor current" "Estimated from cable elongation")
      :xlabel "Time [s]"
      :ylabel "Torque [Nm]"
      )
