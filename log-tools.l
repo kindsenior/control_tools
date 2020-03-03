@@ -609,7 +609,7 @@
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
     ;; (send *gp* :command "set size 2,1.5")
-    (send *gp* :command "set key right inside")
+    (send *gp* :command "set key right outside")
     (send *gp* :command "set key font \"Times New Roman,15\"")
     (if yrange (send *gp* :command (format nil "set yrange [~s:~s]" (car yrange) (cadr yrange))) (send *gp* :command "unset yrange"))
     (if xtics (send *gp* :command (format nil "set xtics ~s" xtics)) (send *gp* :command "unset xtics"))
@@ -849,11 +849,21 @@
         (send *gp* :command "set ytics 100")
         (graph-view
          ;; (list ref-cmz-list act-cmz-list)
-         (list ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list
-               ref-lfoot-z-list act-lfoot-z-list act-root-accel-z-list ref-lfoot-y-list act-lfoot-y-list ref-Ly-list act-Ly-list)
+         (list ref-cmx-list act-cmx-list
+               ref-cmz-list act-cmz-list ref-dcmz-list act-dcmz-list
+               ref-r-fz-list ref-l-fz-list act-r-fz-list act-l-fz-list
+               ref-lfoot-z-list act-lfoot-z-list act-root-accel-z-list ref-lfoot-pi-list act-lfoot-pi-list
+               ref-root-pi-list act-root-pi-list
+               ref-Ly-list act-Ly-list
+               )
          tm-list
-         :keylist (list "Reference CMz" "Actual CMz" "Reference dCMz" "Actual dCMz" "Reference rFz" "Reference lFz" "Actual rFz" "Actual lFz"
-                        "Reference lz" "Actual lz" "Actual root accel z" "Reference lp" "Actual lp" "Reference Ly" "Actual Ly")
+         :keylist (list "ref CMx" "act CMx"
+                        "ref CMz" "act CMz" "ref dCMz" "act dCMz"
+                        "ref rFz" "ref lFz" "act rFz" "act lFz"
+                        "ref lz" "act lz" "act root accel z" "ref lpi" "act lpi"
+                        "ref root pi" "act root pi"
+                        "ref Ly" "act Ly"
+                        )
          :title fname
          :graph-fname (reg-replace* " " "_" (if add-fname (format nil "~a ~a.eps" fname add-fname) (format nil "~a.eps" fname)))
          :dump-graph save
