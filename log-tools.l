@@ -706,6 +706,8 @@
            (resetup-angle-vector resetup-joint-list :resetup-robot *robot* :reference-robot *ref-robot*);; resetup angle-vector
            (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)));; for setting orientation
            (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs :cop (mapcar #'(lambda (limb) (get-cop advance-rs limb :local :fz-thre fz-thresh)) prev-act-contact-limbs))
+           (mapcar #'(lambda (limb) (send (make-coords :pos (get-cop advance-rs limb :world :fz-thre fz-thresh)) :draw-on :flush nil :size 50 :color #f(1 1 0))) prev-act-contact-limbs)
+
            (send *com-robot* :angle-vector (send rs :reference-angle-vector))
            (send *com-robot* :move-coords (make-coords :rpy (map float-vector #'deg2rad (send (elt *rs-list* 1000) :get :stabilizer-current-base-rpy))) (car (send *com-robot* :links)))
            (move-by-foot-step *com-robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
@@ -791,6 +793,9 @@
      (set-contact-link-drawing *ref-robot* (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :ref) :color ref-color :contact-opacity contact-opacity :float-opacity float-opacity)
      (set-contact-link-drawing *robot*     (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act) :color act-color :contact-opacity contact-opacity :float-opacity float-opacity)
 
+     ;; drawing
+     (send (make-coords :pos (car (last ref-cm-list))) :draw-on :flush nil :size 100 :color #f(0 1 1))
+     (send (make-coords :pos (car (last act-cm-list))) :draw-on :flush nil :size 100 :color #f(1 1 0))
      (send (send rs :get :auto-balancer-reference-root-coords) :draw-on :flush t)
 
      (push-back (elt (send rs :get :st-rleg-ref-force) 2) ref-r-fz-list)
