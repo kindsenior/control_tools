@@ -489,8 +489,9 @@
      (zf zmpfile :direction :output)
      (format zf "0 ")
      (mapc #'(lambda (val)
-               (format zf "~s " (/ val 1000)))
-           (coerce (send waist-coord :inverse-transform-vector (v+ zmp zmp-offset)) cons))
+               (format zf "~s " (/ val 1000.0)))
+           (coerce (send waist-coord :inverse-transform-vector zmp) cons)
+           )
      )
 
     ;; posfile作成  
@@ -505,8 +506,9 @@
        ))
 
     ;; wrenchfile作成
+    (setq lcop-offset zmp rcop-offset zmp)
     (setq fz (* 9.8 1e-3 0.5 (send *robot* :weight)));; [N]
-    (setq lf (float-vector 0 0 fz) 
+    (setq lf (float-vector 0 0 fz)
           ln (float-vector (* fz (elt lcop-offset 1) 1e-3) (* -1 fz (elt lcop-offset 0) 1e-3) 0)
           rf (float-vector 0 0 fz)
           rn (float-vector (* fz (elt rcop-offset 1) 1e-3) (* -1 fz (elt rcop-offset 0) 1e-3) 0))
