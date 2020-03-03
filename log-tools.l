@@ -578,10 +578,24 @@
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) '(:lleg :rleg :larm :rarm)) :get-val 'geometry::bodies)) :glvertices) :set-color color float-opacity)
   (send-all (send-all (flatten (send-all (mapcar #'(lambda (limb) (send robot limb :end-coords :parent)) contact-limbs) :get-val 'geometry::bodies)) :glvertices) :set-color color contact-opacity))
 
+(defun resetup-angle-vector (joint-list &key (resetup-robot *robot*) (reference-robot *ref-robot*) (mode :act2ref))
+  (mapc #'(lambda (joint-key)
+            (mapc #'(lambda (joint-method) (send (send resetup-robot joint-method) :joint-angle (send (send reference-robot joint-method) :joint-angle)))
+                  (remove (subseq (format nil "~s" joint-key) 1) (send resetup-robot :methods);; remove colon from joint-key
+                          :test #'(lambda (key robot-method-symbol)
+                                    (let ((robot-method (format nil "~s" robot-method-symbol)))
+                                    ;;   (if (equal key (subseq robot-method (- (length robot-method) (length key)) (length robot-method)))
+                                    ;;       (format t "key: ~s  robot-method: ~s~%" key robot-method))
+                                      (not (equal key (subseq robot-method (- (length robot-method) (length key)) (length robot-method)))))))
+                  ))
+        joint-list)
+  )
+
 (defun analyze-motion (&key (step 10) (rs-list *rs-list*) (start-tm 0) (stop-tm (send (car (last rs-list)) :time)) (yrange '(-100 1000)) (xtics 0.5) (repeat nil) (plot t)
                                  (add-fname nil) (fname (format nil "cmz")) (save nil)
                                  (dt 0.002) (advance-tm 0.04) (fz-thresh 50) (takeoff-fz-thresh fz-thresh) (landing-fz-thresh fz-thresh) (min-jump-time 0.05)
                                  (mode "lines") (sleep-time 0) (root-mode :real) (model-mode :ref-act) (dcm-lpr 0.4)
+                                 (resetup-joint-list nil)
                                  )
   (let ((idx) (rs) (advance-rs) (advance-idx (round (/ advance-tm (* dt step)))) (start-idx) (stop-idx) (fz) (takeoff-idx nil) (landing-idx nil) (act-contact-state-list) (last-cm) (last-dcm) (ref-last-cm) (last-ref-root-pos)
         ref-root-pos-list ref-root-vel-list
@@ -689,6 +703,7 @@
      (if (and (> (length (setq act-contact-limbs (get-contact-limbs advance-rs :fz-thresh fz-thresh :frame :act))) 0) (> (length prev-act-contact-limbs) 0))
          (progn ;; supporting phase
            (send *robot* :angle-vector (send rs :angle-vector))
+           (resetup-angle-vector resetup-joint-list :resetup-robot *robot* :reference-robot *ref-robot*);; resetup angle-vector
            (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)));; for setting orientation
            (move-by-foot-step *robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs :cop (mapcar #'(lambda (limb) (get-cop advance-rs limb :local :fz-thre fz-thresh)) prev-act-contact-limbs))
            (send *com-robot* :angle-vector (send rs :reference-angle-vector))
@@ -713,6 +728,7 @@
          (push-back (v+ last-dcm (scale time-step g-vec)) act-dcm-list)
 
          (send *robot* :angle-vector (send rs :angle-vector))
+         (resetup-angle-vector resetup-joint-list :resetup-robot *robot* :reference-robot *ref-robot*);; resetup angle-vector
          (send *robot* :move-coords (send rs :root-coords) (car (send *robot* :links)))
          (send *robot* :translate (v- (car (last act-cm-list)) (send *robot* :centroid)) :world)
          (send *com-robot* :angle-vector (send rs :reference-angle-vector))
