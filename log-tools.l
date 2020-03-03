@@ -567,6 +567,7 @@
     ;; ;; (send robot :translate (scale (/ 1.0 (length common-contact-tf)) (apply #'v+ #f(0 0 0) (mapcar #'(lambda (tf) (send tf :pos)) common-contact-tf))) :world);; use only pos
 
     (cond
+     ((= (length common-contact-limbs) 0) (warn "  contact limbs: ~s -> ~s~%" prev-contact-limbs cur-contact-limbs))
      ((= (length common-contact-limbs) 1)
       (send robot :translate (v- (send (send (car common-contact-coords) :translate (car common-contact-offsets)) :worldpos) (send (send (send robot (car common-contact-limbs) :end-coords :copy-worldcoords) :translate (car common-contact-offsets)) :worldpos)) :world))
      (t
@@ -713,7 +714,8 @@
            (move-by-foot-step *com-robot* prev-act-contact-coords prev-act-contact-limbs act-contact-limbs)
            (when (and (not landing-idx) takeoff-idx)
              (setq landing-idx idx)
-             (unless repeat (warn "takeoff: ~a (~a[sec]) landing: ~a (~a[sec])~%" takeoff-idx (send (elt rs-list takeoff-idx) :time) landing-idx (send (elt rs-list landing-idx) :time)))
+             (unless repeat (warn "takeoff: ~a (~a[sec]) landing: ~a (~a[sec]) flight: ~a(~a[sec])~%" takeoff-idx (send (elt rs-list takeoff-idx) :time) landing-idx (send (elt rs-list landing-idx) :time)
+                                  (- landing-idx takeoff-idx) (- (send (elt rs-list landing-idx) :time) (send (elt rs-list takeoff-idx) :time))))
              (setq takeoff-idx nil))
            ;; (warn "~a ~a ~a~%" (send rs :time) prev-act-contact-limbs (send prev-act-contact-coords :worldpos))
            (push-back (copy-object (send *robot* :centroid)) act-cm-list)
