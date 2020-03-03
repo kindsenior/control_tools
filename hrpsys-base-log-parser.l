@@ -578,7 +578,7 @@
       (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")
       (setq *high-jump-rs-list* (copy-object *rs-list*)))
 
-    (analyze-jump-motion :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil :advance-tm 0.025)
+    (analyze-motion :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil :advance-tm 0.025)
 
     (send *gp* :command "set size 1,0.5")
     (send *gp* :command "set key right inside")
@@ -631,12 +631,12 @@
       (prepare-plot :fname (concatenate string common-path "jump-250msec_postq_modify-chest-mass_0dxgfz_0delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_little-back-tilt_JAXON_BLUE_2018_03-01_20-45_25"))
       (setq *incorrect-mass-rs-list* (copy-object *rs-list*)))
 
-    ;; (analyze-jump-motion :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil)
+    ;; (analyze-motion :rs-list *correct-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil)
     ;; (setq correct-mass-ref-dcmz-list ref-dcmz-list
     ;;       correct-mass-act-l-fz-list act-l-fz-list)
     ;; (setq correct-tm-list tm-list)
 
-    ;; (analyze-jump-motion :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil)
+    ;; (analyze-motion :rs-list *incorrect-mass-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil)
     ;; (setq incorrect-mass-ref-dcmz-list ref-dcmz-list
     ;;       incorrect-mass-act-l-fz-list act-l-fz-list)
 
@@ -680,11 +680,11 @@
     (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/slide-forward-200step-len-5step_pos-eefmqocop2_0delay-xg-dxg_0.06xoff_0.15-0.15-0.2xstep_0.05soleoff_sfc-0.6smu-0.6dmu_500CM_500P_200L_1Lz_0.6f_10n_200nz_toe-float_JAXON_BLUE_2018_04-13_00-21_12"))
     (setq *shuffle-rs-list* (copy-object *rs-list*)))
 
-  (analyze-jump-motion :rs-list *walk-rs-list* :stop-tm 7)
+  (analyze-motion :rs-list *walk-rs-list* :stop-tm 7)
   (setq walk-ref-root-y-list ref-root-y-list
         walk-ref-root-dy-list ref-root-dy-list)
 
-  (analyze-jump-motion :rs-list *shuffle-rs-list* :stop-tm 7)
+  (analyze-motion :rs-list *shuffle-rs-list* :stop-tm 7)
   (setq shuffle-ref-root-y-list ref-root-y-list
         shuffle-ref-root-dy-list ref-root-dy-list)
 
@@ -709,11 +709,11 @@
     (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-200msec_postq_calc-extforce-only-onground_0dxgfz_0.1delay-xg-dxg_L10,50-1,10-0.5,1-0.1,3_S5,70-30,70-10,50-5,40-0.5,1-0.1,3_JAXON_BLUE_2018_02-28_23-25_20")
     (setq *tq-rs-list* (copy-object *rs-list*)))
 
-  (analyze-jump-motion :rs-list *pos-rs-list* :start-tm 1.5 :stop-tm 3 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
+  (analyze-motion :rs-list *pos-rs-list* :start-tm 1.5 :stop-tm 3 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
   (setq pos-act-l-fz-list act-l-fz-list)
   (setq correct-tm-list tm-list)
 
-  (analyze-jump-motion :rs-list *tq-rs-list* :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
+  (analyze-motion :rs-list *tq-rs-list* :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 50)
   (setq tq-act-l-fz-list act-l-fz-list)
 
   (send *gp* :command "set size 1,0.5")
@@ -740,12 +740,12 @@
     (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-200msec_rev3-25_60Vcap_25PE_postq-eefmqp_0delay-xg-dxg_L5,30,10,1,0.5,0.1-70,70,50,10,1,3_S5,30,10,5,0.5,0.1-70,70,50,40,1,5_100CM_20000P_5000L_1Lz_10f_20n_200nz_JAXON_BLUE_2018_04-24_21-28_41"))
     (setq *high-sgain-rs-list* (copy-object *rs-list*)))
 
-  (analyze-jump-motion :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 40 :dcm-lpr 0.3)
+  (analyze-motion :rs-list *low-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 40 :dcm-lpr 0.3)
   (setq low-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
         low-sgain-act-l-fz-list act-l-fz-list)
   (setq low-stain-tm-list tm-list)
 
-  (analyze-jump-motion :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 5 :dcm-lpr 0.3)
+  (analyze-motion :rs-list *high-sgain-rs-list* :start-tm 2.2 :stop-tm 3.2 :step 2 :takeoff-fz-thresh 50 :landing-fz-thresh 5 :dcm-lpr 0.3)
   (setq high-sgain-act-dcmz-list (low-pass-filter act-dcmz-list :dt 0.002 :cutoff-f 15)
         high-sgain-act-l-fz-list act-l-fz-list)
 
@@ -797,24 +797,24 @@
       (setq *5gain-rs-list* (copy-object *rs-list*)))
 
 
-    ;; (analyze-jump-motion :rs-list *0gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
-    (analyze-jump-motion :rs-list *0gain-rs-list* :start-tm 2.39 :stop-tm 3.19 :step 1)
+    ;; (analyze-motion :rs-list *0gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (analyze-motion :rs-list *0gain-rs-list* :start-tm 2.39 :stop-tm 3.19 :step 1)
     (setq 0gain-act-l-fz-list act-l-fz-list)
 
-    (analyze-jump-motion :rs-list *1gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (analyze-motion :rs-list *1gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
     (setq 1gain-act-l-fz-list act-l-fz-list)
     (setq common-tm-list tm-list)
 
-    (analyze-jump-motion :rs-list *2gain-rs-list* :start-tm 2.395 :stop-tm 3.195 :step 1)
+    (analyze-motion :rs-list *2gain-rs-list* :start-tm 2.395 :stop-tm 3.195 :step 1)
     (setq 2gain-act-l-fz-list act-l-fz-list)
 
-    (analyze-jump-motion :rs-list *3gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (analyze-motion :rs-list *3gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
     (setq 3gain-act-l-fz-list act-l-fz-list)
 
-    (analyze-jump-motion :rs-list *4gain-rs-list* :start-tm 2.39 :stop-tm 3.19 :step 1)
+    (analyze-motion :rs-list *4gain-rs-list* :start-tm 2.39 :stop-tm 3.19 :step 1)
     (setq 4gain-act-l-fz-list act-l-fz-list)
 
-    (analyze-jump-motion :rs-list *5gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
+    (analyze-motion :rs-list *5gain-rs-list* :start-tm 2.4 :stop-tm 3.2 :step 1)
     (setq 5gain-act-l-fz-list act-l-fz-list)
 
 
@@ -845,7 +845,7 @@
     (unless (boundp '*rs-list*)
       (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/slip-through-right-200step-len-8step_5PE_pos-eefmqcop2_0delay-xg-dxg_JAXON_BLUE_2018_03-30_18-19_16")))
 
-    ;; (analyze-jump-motion :start-tm 0 :stop-tm 14 :step 10 :yrange nil :xtics 1)
+    ;; (analyze-motion :start-tm 0 :stop-tm 14 :step 10 :yrange nil :xtics 1)
 
     (send *gp* :command "set size 1,0.5")
     ;; (send *gp* :command "set key outside center top horizontal reverse Left")
@@ -893,7 +893,7 @@
     (unless (boundp '*rs-list*)
       (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_RED/lf-rb-toe-turn_little-foot-float_JAXON_RED_2017_02-12_18-53_35")))
 
-    ;; (analyze-jump-motion :start-tm 1 :stop-tm 4 :step 5 :yrange nil :xtics 1)
+    ;; (analyze-motion :start-tm 1 :stop-tm 4 :step 5 :yrange nil :xtics 1)
 
     ;; plot zmp
     (send *gp* :command "set size 1,0.5")
@@ -957,10 +957,10 @@
   (unless (boundp '*rs-list*)
     (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-370msec_over_3-20hrpsysfile_pp_postq-eefmqp_0delay-xg-dxg_L5,30,10,1,0.5,0.1-70,70,50,10,1,3_S5,30,10,5,0.5,0.1-70,70,50,60,1,5_gear-sound_JAXON_BLUE_2018_04-25_00-22_15")))
 
-  ;; (analyze-jump-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :xtics 0.1 :advance-tm 0.015)
-  ;; (analyze-jump-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 80 :xtics 0.1 :advance-tm 0.015)
-  ;; (analyze-jump-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 80 :xtics 0.1 :advance-tm 0.03)
-  (analyze-jump-motion :start-tm 2.3 :stop-tm 3.3 :step 2 :takeoff-fz-thresh 30 :landing-fz-thresh 23 :xtics 0.1 :advance-tm 0.04)
+  ;; (analyze-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :xtics 0.1 :advance-tm 0.015)
+  ;; (analyze-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 80 :xtics 0.1 :advance-tm 0.015)
+  ;; (analyze-motion :start-tm 2 :stop-tm 3.5 :step 2 :takeoff-fz-thresh 80 :landing-fz-thresh 80 :xtics 0.1 :advance-tm 0.03)
+  (analyze-motion :start-tm 2.3 :stop-tm 3.3 :step 2 :takeoff-fz-thresh 30 :landing-fz-thresh 23 :xtics 0.1 :advance-tm 0.04)
 
   ;; plot zmp
   (send *gp* :command "set size 1,0.5")
@@ -1002,7 +1002,7 @@
     (unless (boundp '*rs-list*)
       (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-off-400mm_postq-eefmqp_RHP-fsensor_L5,30,10,1,0.5,5-70,70,50,10,1,5_S5,30,20,5,1,5-70,70,50,40,40,5_1000CM_100P_1000L_1Lz_0.6f_10n_200nz_JAXON_BLUE_2018_06-12_22-52_00")))
 
-    (analyze-jump-motion :start-tm start-tm :stop-tm stop-tm :step 2 :xtics 0.1 :plot nil)
+    (analyze-motion :start-tm start-tm :stop-tm stop-tm :step 2 :xtics 0.1 :plot nil)
 
     (send *gp* :command "set size 1,0.5")
     (send *gp* :command "set key outside center top horizontal reverse Left")
@@ -1052,7 +1052,7 @@
     (unless (boundp '*rs-list*)
       (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-across-120msec-700step-len_postq-eefmqpcop2_l-knee,l-ankle-p-wire-changed_5s2l-10l_backward-fall-after-land_JAXON_BLUE_2018_07-25_00-21_22")))
 
-    (analyze-jump-motion :start-tm start-tm :stop-tm stop-tm :step 2 :xtics 0.1 :plot nil)
+    (analyze-motion :start-tm start-tm :stop-tm stop-tm :step 2 :xtics 0.1 :plot nil)
 
     (send *gp* :command "set size 1,0.5")
     (send *gp* :command "set key outside center top horizontal reverse Left")
@@ -1101,7 +1101,7 @@
   (unless (boundp '*rs-list*)
     (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")))
 
-    (analyze-jump-motion :start-tm 2.3 :stop-tm 3.3 :step 2 :takeoff-fz-thresh 30 :landing-fz-thresh 23 :xtics 0.1 :advance-tm 0.04)
+    (analyze-motion :start-tm 2.3 :stop-tm 3.3 :step 2 :takeoff-fz-thresh 30 :landing-fz-thresh 23 :xtics 0.1 :advance-tm 0.04)
 
     (send *gp* :command "set size 1,0.5")
     ;; (send *gp* :command "set key outside center top horizontal reverse Left")
