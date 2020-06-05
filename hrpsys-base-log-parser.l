@@ -1,3 +1,6 @@
+(load "util.l")
+(load "euslib-tools.l")
+
 (defmacro create-robot-instance (&optional (robot nil))
   (unless robot (setq robot (read-from-string (unix:getenv "ROBOT"))))
   (warning-message 3 "~%loading robot interface file (~a)...~%" robot)
@@ -27,21 +30,20 @@
 (unless (assoc :samplerobot-interface *modules*) (nconc *modules* (list (list* :samplerobot-interface nil))))
 
 ;; for log-parse
-;; (require "package://hrpsys_ros_bridge/euslisp/datalogger-log-parser.l")
-;; (require "euslib/irteus_proposals/motion-lib-proposal.l")
-(warning-message 3 "loading test-st-state-estimate-data.l...~%")
-;; (require (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
-(require "~/prog/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l")
-(defvar *usage-funcs* nil)
-(unless (assoc :nozawa-log-plotter *usage-funcs*)
-  (push (cons :nozawa-log-plotter
-              #'(lambda ()
-                  (warn "~%hrpsys-test/test-st-state-estimate-data.l~%")
-                  (log-plot-usage)
-                  (warn "~%"))) *usage-funcs*))
-
-(load "euslib-tools.l")
-(load "util.l")
+(when (exist-euslib)
+  ;; (require "package://hrpsys_ros_bridge/euslisp/datalogger-log-parser.l")
+  ;; (require "euslib/irteus_proposals/motion-lib-proposal.l")
+  (warning-message 3 "loading test-st-state-estimate-data.l...~%")
+  ;; (require (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
+  (require "~/prog/euslib/demo/nozawa/hrpsys-test/test-st-state-estimate-data.l")
+  (defvar *usage-funcs* nil)
+  (unless (assoc :nozawa-log-plotter *usage-funcs*)
+    (push (cons :nozawa-log-plotter
+                #'(lambda ()
+                    (warn "~%hrpsys-test/test-st-state-estimate-data.l~%")
+                    (log-plot-usage)
+                    (warn "~%"))) *usage-funcs*))
+  )
 
 (unless (assoc :hrpsys-base-log-parser *usage-funcs*)
   (push (cons :hrpsys-base-log-parser

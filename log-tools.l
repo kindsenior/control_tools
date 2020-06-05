@@ -14,7 +14,7 @@
   )
 
 ;; (load (format nil "~a/ros/~a/src/jsk-ros-pkg/euslib/jsk/gnuplotlib.l" (unix:getenv "HOME") (unix:getenv "ROS_DISTRO")))
-(load "~/prog/euslib/jsk/gnuplotlib.l")
+(when (exist-euslib) (load "~/prog/euslib/jsk/gnuplotlib.l"))
 
 (defvar *usage-funcs* nil)
 (unless (assoc :log-tools *usage-funcs*)
@@ -35,13 +35,14 @@
 
 (unless (boundp '*irtviewer*) (make-irtviewer) (send *irtviewer* :change-background #f(0.6 0.6 0.6)))
 
-(cond
- ( (boundp '*gnuplot*) (setq *gp* *gnuplot*) )
- ( (boundp '*gp*) (setq *gnuplot** *gp*) )
- ( t
-   (setq *gnuplot* (gnuplot) *gplot* *gnuplot* *gp* *gnuplot*)
-   (send *gnuplot* :command "set grid")(send *gnuplot* :command "set size 1,1") )
- )
+(when (find 'gnuplot (functions))
+  (cond
+   ( (boundp '*gnuplot*) (setq *gp* *gnuplot*) )
+   ( (boundp '*gp*) (setq *gnuplot** *gp*) )
+   ( t
+     (setq *gnuplot* (gnuplot) *gplot* *gnuplot* *gp* *gnuplot*)
+     (send *gnuplot* :command "set grid")(send *gnuplot* :command "set size 1,1") )
+   ))
 
 (defun set-plot-common-config ()
   (send *gp* :command "set size 1,0.6")

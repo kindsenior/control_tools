@@ -1,3 +1,9 @@
+(defun exist-euslib ()
+  (let ( (val (probe-file (format nil "~a/prog/euslib" (unix:getenv "HOME")))) )
+    (unless val (warning-message 1 "!!!!! ~/prog/euslib does not exist !!!!!~%"))
+    val
+    ))
+
 (defvar *usage-funcs* nil)
 (unless (assoc :util *usage-funcs*)
   (push (cons :util
