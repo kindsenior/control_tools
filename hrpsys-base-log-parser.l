@@ -577,7 +577,8 @@
 
     (unless (boundp '*high-jump-rs-list*)
       ;; (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-370msec_postq_interpolate-remaineder-frame_0delay-xg-dxg_JAXON_BLUE_2018_03-20_22-46_23")
-      (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")
+      ;; (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")
+      (prepare-plot :fname "/home/k-kojima/k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/JAXON_BLUE/jaxonbluefc-jrsj-challenge_2020-07/jump-toe-500msec_tv-background_JAXON_BLUE_2020_07-07_14-57")
       (setq *high-jump-rs-list* (copy-object *rs-list*)))
 
     (analyze-motion :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :step 2 :takeoff-fz-thresh 100 :landing-fz-thresh 100 :plot nil :advance-tm 0.025)
