@@ -1199,15 +1199,16 @@
     ))
 
 (defun plot-torque-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/")
-                                    (start-tm 2.1) (stop-tm 3.7) (dt 0.002) (plot-idx 0) (offset -31) (yrange '(-200 500)) (step 2)
+                                    (start-tm 2) (stop-tm 3.6) (dt 0.002) (plot-idx 0) (offset -31) (yrange '(-100 250)) (step 2)
+                                    (joint-stiffness 2000) (enc-gain 0.975) (enc-offset 0.013) (deg-advance-tm 0.015)
                                     ;; (plot-joint-name-list '("LLEG-JOINT3"))
                                     (plot-joint-name "LLEG-JOINT3"))
   (let ((rs-list) (xrange (list start-tm stop-tm)) (tmp-key-list '(:abs-angle :enc-angle)) (gain -1)
-        ;; (joint-stiffness 4700)
-        (joint-stiffness 2000)
+        (deg-advance-idx (round (/ deg-advance-tm (* dt step))))
         (joint-name-list (get-joint-name-list)))
     (unless (boundp '*rs-list*)
-      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")))
+      ;; (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")))
+      (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jaxonbluefc-jrsj-challenge_2020-07/jump-toe-500msec_tv-background_with-smart-phone_tilt-after-land_JAXON_BLUE_2020_07-07_15-08_58")))
 
     (setq xrange (calc-xrange xrange *rs-list*)
           rs-list (subseq *rs-list* (car xrange) (cadr xrange)))
@@ -1239,22 +1240,32 @@
     (send *gp* :command "set xtics offset 0,0.5")
     (send *gp* :command "set tmargin 0.5")
 
-    (send *gp* :command (format nil "set object 1 rect from ~s,~s to ~s,~s fc lt 1" 0.5 (car yrange) 1 (cadr yrange)))
+    (send *gp* :command (format nil "set object 1 rect from ~s,~s to ~s,~s fc lt 1" (- 2.58 start-tm) (car yrange) (- 3.08 start-tm) (cadr yrange)))
     (send *gp* :command (format nil "set object 1 rect fc rgb \"gray\" fillstyle solid 1.0 noborder"))
 
     (setq joint-idx (position plot-joint-name joint-name-list :test #'equal))
+
+    (setq current-estimated-torque-list (mapcar #'(lambda (tq) (* gain tq)) (elt (cadr (memq :torque-vector torque-vector-list)) joint-idx))
+          cable-elongation-estimated-torque-list
+          (mapcar #'(lambda (abs-angle enc-angle) (* gain joint-stiffness (- (* enc-angle (+ enc-gain enc-offset)) abs-angle)))
+                  (elt (cadr (memq :abs-angle abs-enc-list)) joint-idx) (elt (cadr (memq :enc-angle abs-enc-list)) joint-idx)))
+
+    ;; ;; advance elogation estimated torque
+    ;; (setq cable-elongation-estimated-torque-list (concatenate cons (subseq cable-elongation-estimated-torque-list deg-advance-idx) (make-list deg-advance-idx :initial-element (car (last cable-elongation-estimated-torque-list)))))
+    ;; delay current estimated torque
+    (setq current-estimated-torque-list (concatenate cons (make-list deg-advance-idx :initial-element (car current-estimated-torque-list)) (subseq current-estimated-torque-list 0 (- (length current-estimated-torque-list) deg-advance-idx))))
+
     (graph-view
      (list
-      (mapcar #'(lambda (tq) (* gain tq)) (elt (cadr (memq :torque-vector torque-vector-list)) joint-idx))
-      (mapcar #'(lambda (abs-angle enc-angle) (* gain joint-stiffness (- enc-angle abs-angle)))
-              (elt (cadr (memq :abs-angle abs-enc-list)) joint-idx)
-              (elt (cadr (memq :enc-angle abs-enc-list)) joint-idx))
+      current-estimated-torque-list
+      cable-elongation-estimated-torque-list
+      (mapcar #'(lambda (current-tq elongation-eq) (- elongation-eq current-tq)) current-estimated-torque-list cable-elongation-estimated-torque-list)
       )
      (mapcar #'(lambda (tm) (- tm start-tm)) (cadr (memq :time abs-enc-list)))
      :title ""
      :graph-fname "high-jump-joint-torque-estimation.eps"
      :dump-graph t
-     :keylist '("Estimated from motor current" "Estimated from cable elongation")
+     :keylist '("Estimated from motor current" "Estimated from cable elongation" "Difference")
      :xlabel "Time [s]"
      :ylabel "Torque [Nm]"
      )
