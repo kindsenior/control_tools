@@ -1198,9 +1198,31 @@
      :dump-graph t)
     ))
 
+(defun calc-torque-from-non-linear-stiffness
+    (diff-angle;; [rad]
+     &key (radius 0.07) (wire-len 0.7) (wire-num 2.0)
+     (stiffness-modulus-list '(63143 265200 500100));; [N]
+     (elongation-rate-list '(0.00526 0.0105 1.0))
+     )
+  ;; (let* ((elongation-rate (+ (/ (* diff-angle radius) wire-len) (car elongation-rate-list))) (idx 0) (val 0))
+  (let* ((angle2elongation (* radius (/ 1.0 wire-len)))
+         (elongation-rate (/ (* (abs diff-angle) radius) wire-len))
+         (elongation2angle (/ diff-angle elongation-rate))
+         (idx 0) (val 0))
+    (push 0 elongation-rate-list)
+    (* wire-num (/ 1.0 wire-len) (expt radius 2) elongation2angle
+       (while (< idx (length stiffness-modulus-list))
+         (if (< (abs elongation-rate) (elt elongation-rate-list (1+ idx)))
+             (return (+ val (* (elt stiffness-modulus-list idx) (- (abs elongation-rate) (elt elongation-rate-list idx)))))
+           (setq val (+ val (* (elt stiffness-modulus-list idx) (- (elt elongation-rate-list (1+ idx)) (elt elongation-rate-list idx))))))
+         (incf idx)
+         ))
+    ))
+
 (defun plot-torque-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/")
-                                    (start-tm 2) (stop-tm 3.6) (dt 0.002) (plot-idx 0) (offset -31) (yrange '(-100 250)) (step 2)
-                                    (joint-stiffness 2000) (enc-gain 0.975) (enc-offset 0.013) (deg-advance-tm 0.015)
+                                    (start-tm 2) (stop-tm 3.6) (dt 0.002) (plot-idx 0) (offset -31) (yrange nil) (step 2)
+                                    (joint-stiffness 2000) (enc-gain 1) (enc-offset -0.02) (deg-advance-tm 0.015)
+                                    (motor-num 1)
                                     ;; (plot-joint-name-list '("LLEG-JOINT3"))
                                     (plot-joint-name "LLEG-JOINT3"))
   (let ((rs-list) (xrange (list start-tm stop-tm)) (tmp-key-list '(:abs-angle :enc-angle)) (gain -1)
@@ -1209,13 +1231,14 @@
     (unless (boundp '*rs-list*)
       ;; (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")))
       (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jaxonbluefc-jrsj-challenge_2020-07/jump-toe-500msec_tv-background_with-smart-phone_tilt-after-land_JAXON_BLUE_2020_07-07_15-08_58")))
-
-    (setq xrange (calc-xrange xrange *rs-list*)
+ 
+   (setq xrange (calc-xrange xrange *rs-list*)
           rs-list (subseq *rs-list* (car xrange) (cadr xrange)))
 
     (setq abs-enc-list (plot-voltage-drop :plot-joint-name-list (list plot-joint-name) :yrange '(0 3) :plot-key-list tmp-key-list :step step :start-tm start-tm :stop-tm stop-tm))
-    (setq torque-vector-list (plot-joint-data :plot-joint-name-list (list plot-joint-name) :plot-joint-key-list '("") :ylabel-list '("") :fname-list '("")
-                                              :plot-keys-list '((:torque-vector)) :plot-key-names-list '((""))
+    (setq joint-data-list (plot-joint-data :plot-joint-name-list (list plot-joint-name)
+                                              :plot-joint-key-list '("" "") :ylabel-list '("" "") :fname-list '("" "")
+                                              :plot-keys-list '((:torque-vector) (:act-dq :ref-dq)) :plot-key-names-list '(("") (""))
                                               :step step :start-tm start-tm :stop-tm stop-tm))
     ;; (setq tm-list (mapcar #'(lambda (rs) (send rs :time)) rs-list))
 
@@ -1245,10 +1268,19 @@
 
     (setq joint-idx (position plot-joint-name joint-name-list :test #'equal))
 
-    (setq current-estimated-torque-list (mapcar #'(lambda (tq) (* gain tq)) (elt (cadr (memq :torque-vector torque-vector-list)) joint-idx))
+    (setq current-estimated-torque-list (mapcar #'(lambda (tq) (* gain tq)) (elt (cadr (memq :torque-vector joint-data-list)) joint-idx))
           cable-elongation-estimated-torque-list
-          (mapcar #'(lambda (abs-angle enc-angle) (* gain joint-stiffness (- (* enc-angle (+ enc-gain enc-offset)) abs-angle)))
+          ;; (mapcar #'(lambda (abs-angle enc-angle) (* gain joint-stiffness       (- (* enc-angle (+ enc-gain enc-offset)) abs-angle)))
+          (mapcar #'(lambda (abs-angle enc-angle) (* gain (calc-torque-from-non-linear-stiffness (- (* enc-angle (+ enc-gain enc-offset)) abs-angle))))
                   (elt (cadr (memq :abs-angle abs-enc-list)) joint-idx) (elt (cadr (memq :enc-angle abs-enc-list)) joint-idx)))
+
+    (let* ( (prev-dq 0) (gear-ratio 229) (motor-inertia (* 33.3 1e-7 motor-num)) (joint-inertia (* motor-inertia (expt gear-ratio 2))) )
+      (setq measured-loss-list (mapcar #'(lambda (dq) (* gain joint-inertia (/ (deg2rad (- dq prev-dq)) (* dt step))));; Jjnt * ddq [Nm]
+                                       (elt (cadr (memq :act-dq joint-data-list)) joint-idx));; joint vel [deg/s]
+            ref-loss-list (mapcar #'(lambda (dq) (* gain joint-inertia (/ (deg2rad (- dq prev-dq)) (* dt step))));; Jjnt * ddq [Nm]
+                                  (elt (cadr (memq :ref-dq joint-data-list)) joint-idx));; joint vel [deg/s]
+            )
+      )
 
     ;; ;; advance elogation estimated torque
     ;; (setq cable-elongation-estimated-torque-list (concatenate cons (subseq cable-elongation-estimated-torque-list deg-advance-idx) (make-list deg-advance-idx :initial-element (car (last cable-elongation-estimated-torque-list)))))
@@ -1260,12 +1292,17 @@
       current-estimated-torque-list
       cable-elongation-estimated-torque-list
       (mapcar #'(lambda (current-tq elongation-eq) (- elongation-eq current-tq)) current-estimated-torque-list cable-elongation-estimated-torque-list)
+      ;; measured-loss-list
+      ;; ref-loss-list
       )
      (mapcar #'(lambda (tm) (- tm start-tm)) (cadr (memq :time abs-enc-list)))
      :title ""
      :graph-fname "high-jump-joint-torque-estimation.eps"
      :dump-graph t
-     :keylist '("Estimated from motor current" "Estimated from cable elongation" "Difference")
+     :keylist '("Estimated from motor current" "Estimated from cable elongation"
+                "Estimated loss"
+                ;; "Measured loss" "Reference loss"
+                )
      :xlabel "Time [s]"
      :ylabel "Torque [Nm]"
      )
