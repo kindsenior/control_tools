@@ -1220,7 +1220,7 @@
     ))
 
 (defun plot-torque-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/")
-                                    (start-tm 2) (stop-tm 3.6) (dt 0.002) (plot-idx 0) (offset -31) (yrange nil) (step 2)
+                                    (start-tm 2) (stop-tm 3.6) (dt 0.002) (plot-idx 0) (yrange nil) (ytics 10) (step 2)
                                     (joint-stiffness 2000) (enc-gain 1) (enc-offset -0.02) (deg-advance-tm 0.015)
                                     (motor-num 1)
                                     ;; (plot-joint-name-list '("LLEG-JOINT3"))
@@ -1242,8 +1242,6 @@
                                               :step step :start-tm start-tm :stop-tm stop-tm))
     ;; (setq tm-list (mapcar #'(lambda (rs) (send rs :time)) rs-list))
 
-    (if yrange (set-yrange yrange) (send *gp* :command "set autoscale y"))
-
     (send *gp* :command "set size 1,0.5")
     ;; (send *gp* :command "set key outside center top horizontal reverse Left")
     (send *gp* :command "set key inside left top vertical reverse Left")
@@ -1262,9 +1260,6 @@
     (send *gp* :command "set xlabel offset 0,1")
     (send *gp* :command "set xtics offset 0,0.5")
     (send *gp* :command "set tmargin 0.5")
-
-    (send *gp* :command (format nil "set object 1 rect from ~s,~s to ~s,~s fc lt 1" (- 2.58 start-tm) (car yrange) (- 3.08 start-tm) (cadr yrange)))
-    (send *gp* :command (format nil "set object 1 rect fc rgb \"gray\" fillstyle solid 1.0 noborder"))
 
     (setq joint-idx (position plot-joint-name joint-name-list :test #'equal))
 
@@ -1287,6 +1282,16 @@
     ;; delay current estimated torque
     (setq current-estimated-torque-list (concatenate cons (make-list deg-advance-idx :initial-element (car current-estimated-torque-list)) (subseq current-estimated-torque-list 0 (- (length current-estimated-torque-list) deg-advance-idx))))
 
+    ;; decide yrange from max/min value if it is not set
+    (unless yrange
+      (setq yrange
+            (list (* (floor   (/ (min (apply #'min cable-elongation-estimated-torque-list) (apply #'min current-estimated-torque-list)) ytics)) ytics)
+                  (* (ceiling (/ (max (apply #'max cable-elongation-estimated-torque-list) (apply #'max current-estimated-torque-list)) ytics)) ytics))))
+    (set-yrange yrange)
+    ;; jump phase overlay
+    (send *gp* :command (format nil "set object 1 rect from ~s,~s to ~s,~s fc lt 1" (- 2.58 start-tm) (car yrange) (- 3.08 start-tm) (cadr yrange)))
+    (send *gp* :command (format nil "set object 1 rect fc rgb \"gray\" fillstyle solid 1.0 noborder"))
+
     (graph-view
      (list
       current-estimated-torque-list
@@ -1300,7 +1305,7 @@
      :graph-fname "high-jump-joint-torque-estimation.eps"
      :dump-graph t
      :keylist '("Estimated from motor current" "Estimated from cable elongation"
-                "Estimated loss"
+                "Difference"
                 ;; "Measured loss" "Reference loss"
                 )
      :xlabel "Time [s]"
