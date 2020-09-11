@@ -69,8 +69,9 @@
               (setq fname "test")))
 
         (setq date (get-date-string)
-              fname (format nil "~a_~a_~a" fname (send *robot* :name) date)
-              path (format nil "/home/~a/~a/~a/~a" (unix:getenv "USER") log-dir (send *robot* :name) fname) )
+              robot-name (if (boundp '*robot*) (send *robot* :name) (unix:getenv "ROBOT"))
+              fname (format nil "~a_~a_~a" fname robot-name date)
+              path (format nil "/home/~a/~a/~a/~a" (unix:getenv "USER") log-dir robot-name fname) )
         (unix:system (format nil "mkdir -p ~a" path))
 
         (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a/~a.log" user-name machine-name path fname)))

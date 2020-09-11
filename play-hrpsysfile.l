@@ -14,8 +14,7 @@
 ;; (load "~/prog/hrp2/plugins/test-log-parser.l")
 (if (unix:getenv "OLD_HRPSYS") (warning-message 1 "!!!!!!!!!!Using Old hrpsys!!!!!!!!!!~%") (warning-message 3 "Using New hrpsys~%"))
 
-(defmacro create-robot-interface (&optional (robot nil))
-  (unless robot (setq robot (read-from-string (unix:getenv "ROBOT"))))
+(defmacro create-robot-interface (&optional (robot (read-from-string (string-downcase (unix:getenv "ROBOT")))))
   (warning-message 3 "~%loading robot interface file (~a)...~%" robot)
   (list
    'progn
@@ -28,9 +27,19 @@
   )
 
 (if (not (unix:getenv "OLD_HRPSYS"))
-    (if (equal (unix:getenv "ROBOT") "");; new hrpsys
-        (warning-message 1 "!!!!!!!!!!No ROBOT TYPE!!!!!!!!!!~%")
-      (unless (boundp '*robot*) (create-robot-interface)))
+    (progn ;; new hrpsys
+      (setq robot-string (unix:getenv "ROBOT"))
+      (if robot-string
+          (progn
+            (setq interface-file-path (format nil (ros::resolve-ros-path "package://hrpsys_ros_bridge_tutorials/euslisp/~a-interface.l") (read-from-string (string-downcase robot-string))))
+            (if (probe-file interface-file-path)
+                (unless (boundp '*robot*) (create-robot-interface))
+              (progn
+                (warning-message 1 "~a not exists~%" interface-file-path)
+                (setq *servo-state-msg* nil))
+            ))
+        (warning-message 1 "Please set ROBOT variable for (create-robot-interface)~%")
+        ))
   (when (not (boundp '*hrp2*)) (setup-model-for-hrp2) (setq *robot* *hrp2*)  );; old hrpsys
   )
 
@@ -73,16 +82,19 @@
 ;;   (if (boundp '*gplot*) (setq *gnuplot* *gplot*)  (setq *gnuplot* (gnuplot)))
 ;;   (send *gnuplot* :command "set size 1.5,1")(send *gnuplot* :command "set size 1,1"))
 
-(defun get-control-machine-name (&key (robot *robot*))
-  (string-downcase (reg-replace "_" "" (send *robot* :name)))
+(defun get-control-machine-name (&key (robot (if (boundp '*robot*) *robot* nil)))
+  (if robot
+      (string-downcase (reg-replace "_" "" (send *robot* :name)))
+    "localhost") ;; return local machine name for ichijiku test bed
   )
 
-(defun get-control-machine-user-name (&key (robot *robot*))
+(defun get-control-machine-user-name (&key (robot (if (boundp '*robot*) *robot* nil)))
   (let ((machine-name (get-control-machine-name :robot robot)) (user-name nil))
     (cond
      ((substringp "jaxon" machine-name) (setq user-name "leus"))
      ((substringp "hrp" machine-name) (setq user-name "grxuser"))
-     (t (warn "~s is not supported robot~%"))
+     ((equal "root" (unix:getenv "USER")) (setq user-name "k-kojima"))
+     (t (warn "~s is not supported robot~%" robot) (setq user-name (unix:getenv "USER"))) ;; return local user name for ichijiku test bed
      )
     user-name
     ))
@@ -653,7 +665,7 @@
     ))
 
 (defun init-play-hrpsysfile()
-  (unless (is-simulation)
+  (when (and (not (is-simulation)) (unix:getenv "ROBOT"))
     (when (not (boundp '*servo-state-msg*))
       (warning-message 2 "subscribe /shm_servo_state~%")
       (ros::subscribe "/shm_servo_state"  trans_ros_bridge::ServoState #'(lambda (msg) (setq *servo-state-msg* msg)))

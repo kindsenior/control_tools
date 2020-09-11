@@ -15,9 +15,16 @@
    )
   )
 
-(if (equal (unix:getenv "ROBOT") "")
-    (warning-message 1 "!!!!!!!!!!No ROBOT TYPE!!!!!!!!!!~%")
-    (unless (boundp '*robot*) (create-robot-instance)))
+(let ((robot-string (unix:getenv "ROBOT")))
+  (if robot-string
+      (progn
+        (setq interface-file-path (format nil (ros::resolve-ros-path "package://hrpsys_ros_bridge_tutorials/euslisp/~a-interface.l") (read-from-string (string-downcase robot-string))))
+        (if (probe-file interface-file-path)
+            (unless (boundp '*robot*) (create-robot-instance))
+          (warning-message 1 "~a not exists~%" interface-file-path))
+        )
+    (warning-message 1 "Please set ROBOT variable for (create-robot-instance)~%")
+    ))
 
 ;; disable needless module loading
 (unless (assoc :hrp2jsk-interface     *modules*) (nconc *modules* (list (list* :hrp2jsk-interface     nil))))
