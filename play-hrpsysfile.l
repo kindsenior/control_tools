@@ -68,7 +68,7 @@
                   (warning-message 3 "(prepare-experiment :start-st t :set-pose t :st-algorithm :eefmqpcop2)~%")
                   (warning-message 3 "(init-pose :fname <FILE NAME> :sample-name <SAMPLE NAME> :real t)~%")
                   (warning-message 3 "(play-hrpsysfile :fname <FILE NAME> :sample-name <SAMPLE NAME> :use-init-file nil :real t)~%")
-                  (warning-message 3 "(save-log :fname <FILE NAME> :add-fname <FILE NAME OPTION>)~%")
+                  (warning-message 3 "(save-log :fname <FILE NAME> :add-fname <FILE NAME OPTION> :log-dir <log directory name from ${HOME}>)~%")
                   (warn "~%")
                   (warning-message 3 "(set-pgain <l-crotch dgain>)~%")
                   (warning-message 3 "(set-dgain <l-crotch dgain>)~%")
