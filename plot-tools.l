@@ -1,4 +1,5 @@
 (load "util.l")
+(load "euslib-tools.l")
 (when (exist-euslib) (load "~/prog/euslib/jsk/gnuplotlib.l"))
 
 (defun setup-plot-tools ()
