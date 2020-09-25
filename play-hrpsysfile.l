@@ -53,7 +53,6 @@
 (ros::roseus "play-hrpsysfile.l")
 (ros::load-ros-manifest "trans_ros_bridge")
 
-;; (load "euslib/jsk/gnuplotlib.l")
 (load "log-tools.l")
 
 (defvar *usage-funcs* nil)
@@ -77,10 +76,6 @@
 (usage)
 
 ;; (if (not (boundp '*ci*)) (setup-real-for-hrp2))
-
-;; (when (not (boundp '*gnuplot*))
-;;   (if (boundp '*gplot*) (setq *gnuplot* *gplot*)  (setq *gnuplot* (gnuplot)))
-;;   (send *gnuplot* :command "set size 1.5,1")(send *gnuplot* :command "set size 1,1"))
 
 (defun get-control-machine-name (&key (robot (if (boundp '*robot*) *robot* nil)))
   (if robot
