@@ -528,6 +528,8 @@
     (warn "analyze-motion~%")
     (multiple-value-setq (start-idx stop-idx) (calc-xrange (list start-tm stop-tm) rs-list))
 
+    (setup-plot-tools)
+
     ;; (send *gp* :command "set size 2,1.5")
     (send *gp* :command "set key right outside")
     (send *gp* :command "set key font \"Times New Roman,15\"")
