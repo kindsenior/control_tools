@@ -6,12 +6,12 @@
   (when (find 'gnuplot (functions))
     (cond
      ( (boundp '*gnuplot*) (setq *gp* *gnuplot*) )
-     ( (boundp '*gp*) (setq *gnuplot** *gp*) )
-     ( t
-       (setq *gnuplot* (gnuplot) *gplot* *gnuplot* *gp* *gnuplot*)
-       (send *gnuplot* :command "set grid")
-       )
-     )))
+     ( (boundp '*gp*)      (setq *gnuplot* *gp*) )
+     ( t                   (setq *gnuplot* (gnuplot) *gplot* *gnuplot* *gp* *gnuplot*) )
+     )
+    (send *gnuplot* :command "set grid")
+    (send *gnuplot* :command "set xzeroaxis linewidth 1.5")
+    ))
 
 (defun set-plot-common-config (&key (gp *gp*))
   (send gp :command "set size 1,0.6")
