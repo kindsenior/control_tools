@@ -1228,27 +1228,29 @@
 
 (defun plot-torque-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/")
                                     (start-tm 2) (stop-tm 3.6) (dt 0.002) (plot-idx 0) (yrange nil) (ytics 10) (step 2)
-                                    (joint-stiffness 2000) (enc-gain 1) (enc-offset -0.02) (deg-advance-tm 0.015)
+                                    (joint-stiffness 2000) (enc-gain 1) (enc-offset -0.02) (deg-advance-tm 0.015) (wire-len 0.85)
                                     (motor-num 1)
                                     ;; (plot-joint-name-list '("LLEG-JOINT3"))
                                     (plot-joint-name "LLEG-JOINT3"))
   (let ((rs-list) (xrange (list start-tm stop-tm)) (tmp-key-list '(:abs-angle :enc-angle)) (gain -1)
         (deg-advance-idx (round (/ deg-advance-tm (* dt step))))
-        (joint-name-list (get-joint-name-list)))
+        (joint-name-list (get-joint-name-list)) (tm-list))
     (unless (boundp '*rs-list*)
       ;; (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jump-toe-500msec_0.1land-rate,0.15transe_JAXON_BLUE_2019_02-27_17-18_45")))
       (prepare-plot :fname (concatenate string (unix:getenv "HOME") "/" log-dir "JAXON_BLUE/jaxonbluefc-jrsj-challenge_2020-07/jump-toe-500msec_tv-background_with-smart-phone_tilt-after-land_JAXON_BLUE_2020_07-07_15-08_58")))
- 
+
    (setq xrange (calc-xrange xrange *rs-list*)
           rs-list (subseq *rs-list* (car xrange) (cadr xrange)))
 
     (setq abs-enc-list (plot-voltage-drop :plot-joint-name-list (list plot-joint-name) :yrange '(0 3) :plot-key-list tmp-key-list :step step :start-tm start-tm :stop-tm stop-tm))
     (setq joint-data-list (plot-joint-data :plot-joint-name-list (list plot-joint-name)
-                                              :plot-joint-key-list '("" "") :ylabel-list '("" "") :fname-list '("" "")
-                                              :plot-keys-list '((:torque-vector) (:act-dq :ref-dq)) :plot-key-names-list '(("") (""))
-                                              :step step :start-tm start-tm :stop-tm stop-tm))
+                                           :plot-joint-key-list '("" "") :ylabel-list '("" "") :fname-list '("" "")
+                                           :plot-keys-list '((:torque-vector) (:act-dq :ref-dq)) :plot-key-names-list '(("") (""))
+                                           :step step :start-tm start-tm :stop-tm stop-tm))
     ;; (setq tm-list (mapcar #'(lambda (rs) (send rs :time)) rs-list))
+    (setq tm-list (mapcar #'(lambda (tm) (- tm start-tm)) (cadr (memq :time abs-enc-list))))
 
+    (setup-plot-tools)
     (send *gp* :command "set size 1,0.5")
     ;; (send *gp* :command "set key outside center top horizontal reverse Left")
     (send *gp* :command "set key inside left top vertical reverse Left")
@@ -1273,14 +1275,29 @@
     (setq current-estimated-torque-list (mapcar #'(lambda (tq) (* gain tq)) (elt (cadr (memq :torque-vector joint-data-list)) joint-idx))
           cable-elongation-estimated-torque-list
           ;; (mapcar #'(lambda (abs-angle enc-angle) (* gain joint-stiffness       (- (* enc-angle (+ enc-gain enc-offset)) abs-angle)))
-          (mapcar #'(lambda (abs-angle enc-angle) (* gain (calc-torque-from-non-linear-stiffness (- (* enc-angle (+ enc-gain enc-offset)) abs-angle))))
+          (mapcar #'(lambda (abs-angle enc-angle) (* gain (calc-torque-from-non-linear-stiffness (- (* enc-angle (+ enc-gain enc-offset)) abs-angle) :wire-len wire-len)))
                   (elt (cadr (memq :abs-angle abs-enc-list)) joint-idx) (elt (cadr (memq :enc-angle abs-enc-list)) joint-idx)))
 
-    (let* ( (prev-dq 0) (gear-ratio 229) (motor-inertia (* 33.3 1e-7 motor-num)) (joint-inertia (* motor-inertia (expt gear-ratio 2))) )
-      (setq measured-loss-list (mapcar #'(lambda (dq) (* gain joint-inertia (/ (deg2rad (- dq prev-dq)) (* dt step))));; Jjnt * ddq [Nm]
-                                       (elt (cadr (memq :act-dq joint-data-list)) joint-idx));; joint vel [deg/s]
-            ref-loss-list (mapcar #'(lambda (dq) (* gain joint-inertia (/ (deg2rad (- dq prev-dq)) (* dt step))));; Jjnt * ddq [Nm]
-                                  (elt (cadr (memq :ref-dq joint-data-list)) joint-idx));; joint vel [deg/s]
+    (let* ( (prev-dq 0) (gear-ratio 229) (motor-inertia (* 33.3 1e-7 motor-num)) (joint-inertia (* motor-inertia (expt gear-ratio 2)))
+            (lpf-rate 0.25) (i-ddq 0) (last-tm 0) )
+      (setq measured-loss-list (mapcar #'(lambda (dq tm)
+                                           (setq i-ddq (+ (* (- 1 lpf-rate) i-ddq) (* lpf-rate gain joint-inertia (/ (deg2rad (- dq prev-dq)) (- tm last-tm))));; with LPF
+                                                 prev-dq dq last-tm tm)
+                                           i-ddq
+                                           );; Jjnt * ddq [Nm]
+                                       (elt (cadr (memq :act-dq joint-data-list)) joint-idx);; joint vel [deg/s]
+                                       tm-list
+                                       )
+            prev-dq 0 last-tm 0
+            ref-loss-list (mapcar #'(lambda (dq tm)
+                                      ;; (setq i-ddq (* gain joint-inertia (/ (deg2rad (- dq prev-dq)) (* dt step)))
+                                      (setq i-ddq (* gain joint-inertia (/ (deg2rad (- dq prev-dq)) (- tm last-tm)))
+                                            prev-dq dq last-tm tm)
+                                      i-ddq
+                                      );; Jjnt * ddq [Nm]
+                                  (elt (cadr (memq :ref-dq joint-data-list)) joint-idx);; joint vel [deg/s]
+                                  tm-list
+                                  )
             )
       )
 
@@ -1307,7 +1324,7 @@
       ;; measured-loss-list
       ;; ref-loss-list
       )
-     (mapcar #'(lambda (tm) (- tm start-tm)) (cadr (memq :time abs-enc-list)))
+     tm-list
      :title ""
      :graph-fname "high-jump-joint-torque-estimation.eps"
      :dump-graph t
