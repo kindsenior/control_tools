@@ -626,6 +626,7 @@
     (plot-joint-data :rs-list *high-jump-rs-list* :start-tm start-tm :stop-tm stop-tm :save t :step 2 :reset-gnuplot nil
                      :plot-joint-name-list '("LLEG-JOINT2" "LLEG-JOINT3" "LLEG-JOINT4") :plot-joint-key-list '("Hip pitch" "Knee" "Ankle pitch")
                      :plot-keys-list '((:act-dq)) :plot-key-names-list '(("")) :fname-list '("high-jump-joint-velocity") :xlabel-list '("Time [s]") :ylabel-list '("Velocity [deg/s]"))
+    nil
     ))
 
 (defun plot-different-mass-jump-comparison (&key (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log/"))
