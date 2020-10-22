@@ -45,7 +45,7 @@
     ))
 
 (defun save-shm-log (&key (fname nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log") (scp t))
-  (let (machine-name user-name date path)
+  (let (machine-name user-name date path (target-fname nil))
     (unless (is-simulation)
       (setq machine-name (get-control-machine-name) user-name (get-control-machine-user-name))
       (unix:system (format nil "ssh ~a@~a sudo pkill -2 ecbridge_shm~%" user-name machine-name))
@@ -59,11 +59,14 @@
         (setq date (get-date-string)
               robot-name (if (boundp '*robot*) (send *robot* :name) (unix:getenv "ROBOT"))
               fname (format nil "~a_~a_~a" fname robot-name date)
-              path (format nil "/home/~a/~a/~a/~a" (unix:getenv "USER") log-dir robot-name fname) )
+              path (format nil "/home/~a/~a/~a/~a" (unix:getenv "USER") log-dir robot-name fname)
+              target-fname (format nil "~a/~a.log" path fname))
         (unix:system (format nil "mkdir -p ~a" path))
 
-        (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a/~a.log" user-name machine-name path fname)))
-    )))
+        (unix:system (format nil "scp ~a@~a:/tmp/shm.log ~a" user-name machine-name target-fname)))
+      )
+    target-fname
+    ))
 
 (defun save-log (&key (fname nil) (add-fname nil) (type :new) (param-list nil) (log-dir "k-kojima@jsk.imi.i.u-tokyo.ac.jp/Documents/log")
                       (parse-flg nil) (save-shm-log nil) (ask-to-save-shm-log t) (save-param t))
