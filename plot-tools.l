@@ -26,6 +26,7 @@
      &optional (abscissa-list (user::range (length (car ordinate-list))))
      &key (title "Graph") (xlabel "X") (ylabel "Y") (zlabel "Z")
      (dump-graph nil) (graph-fname (format nil "~A.eps" (substitute #\_ (elt " " 0) title)))
+     (lt-lw-params)
      ;;(mode "points")
      (mode "lines")
      keylist xrange yrange zrange
@@ -45,6 +46,7 @@
             (if range (format nil "[~A:~A]" (car range) (cadr range)) "[]"))
            (2d-or-3d (r-2d r-3d) (if (atom (car abscissa-list)) (eval r-2d) (eval r-3d))))
     (unless keylist (setq keylist (user::range (length ordinate-list))))
+    (unless lt-lw-params (setq lt-lw-params (let ((idx -1)) (mapcar #'(lambda (x) (incf idx) "") (make-list (length ordinate-list))))))
     ;; dump dat file
     (unless no-dump
       (with-open-file
@@ -71,7 +73,7 @@
     (if additional-func (funcall additional-func))
     (dotimes (i (length ordinate-list))
       (send gp :command
-            (format nil "~A \"/tmp/~A.dat\" using ~A title \"~A\" with ~A"
+            (format nil "~A \"/tmp/~A.dat\" using ~A title \"~A\" ~A with ~A"
                     (cond
                      ((and (= i 0) (not replot))
                       (apply #'format
@@ -84,6 +86,7 @@
                     fname
                     (format nil "~A:~A" (2d-or-3d "1" "1:2") (+ i (2d-or-3d 2 3)))
                     (elt keylist i)
+                    (elt lt-lw-params i)
                     mode))
       )
     (if x11 (send gp :command "set terminal X11"))
