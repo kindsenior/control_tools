@@ -48,7 +48,7 @@
   (if (ros::get-param "use_sim_time" nil) t nil))
 
 (defun is-choreonoid ()
-  (and (is-simulation) (> (read-from-string (read-line (piped-fork "rtls localhost:15005/ -l |grep HEAD | wc -l"))) 0)))
+  (and (is-simulation) (> (read-from-string (read-line (piped-fork "rosnode list |grep choreonoid | wc -l"))) 0)))
 
 (ros::roseus "play-hrpsysfile.l")
 (ros::load-ros-manifest "trans_ros_bridge")
