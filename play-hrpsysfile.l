@@ -88,6 +88,7 @@
     (cond
      ((substringp "jaxon" machine-name) (setq user-name "leus"))
      ((substringp "hrp" machine-name) (setq user-name "grxuser"))
+     ((substringp "manta" machine-name) (setq user-name "leus"))
      ((equal "root" (unix:getenv "USER")) (setq user-name "k-kojima"))
      (t (warn "~s is not supported robot~%" robot) (setq user-name (unix:getenv "USER"))) ;; return local user name for ichijiku test bed
      )
@@ -135,6 +136,7 @@
        ( (equal (send *robot* :name) "JAXON")      (setq uname "leus"    machine-name "jaxon")    )
        ( (equal (send *robot* :name) "JAXON_RED")  (setq uname "leus"    machine-name "jaxonred") )
        ( (equal (send *robot* :name) "JAXON_BLUE") (setq uname "leus"    machine-name "jaxonblue") )
+       ( (equal (send *robot* :name) "MANTA")      (setq uname "leus"    machine-name "manta")    )
        ( t (warning-message 1 "No Setting for The Robot~%") )
        )
       (unix:system (concatenate string "scp " path fname ".* " uname "@" machine-name ":/tmp"))

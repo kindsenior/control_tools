@@ -167,6 +167,7 @@
             ( (equal (send *robot* :name) "JAXON")      (setq uname "leus"    machine-name "jaxon")     )
             ( (equal (send *robot* :name) "JAXON_RED")  (setq uname "leus"    machine-name "jaxonred")  )
             ( (equal (send *robot* :name) "JAXON_BLUE") (setq uname "leus"    machine-name "jaxonblue") )
+            ( (equal (send *robot* :name) "MANTA")      (setq uname "leus"    machine-name "manta")     )
             ( t (warning-message 1 "cannot use save-log in this robot~%") )
             )
            (unix:system (concatenate string "scp " uname "@" machine-name ":/tmp/" org-fname "* " path))
